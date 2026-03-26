@@ -5,2280 +5,1089 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HACKNET v2.4.1</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap');
-
-  :root {
-    --green: #39ff14;
-    --green-dim: #1a7a09;
-    --green-dark: #0a2e05;
-    --yellow: #f5a623;
-    --red: #ff3b30;
-    --blue: #00aaff;
-    --cyan: #00ffcc;
-    --gray: #4a4a4a;
-    --bg: #050e04;
-    --bg2: #080f06;
-    --border: #1a3d12;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  html, body {
-    background: var(--bg);
-    color: var(--green);
-    font-family: 'Share Tech Mono', 'Courier New', monospace;
-    font-size: 13px;
-    height: 100%;
-    overflow: hidden;
-    cursor: none;
-  }
-
-  /* Custom cursor */
-  #cursor {
-    width: 12px; height: 12px;
-    border: 1px solid var(--green);
-    border-radius: 50%;
-    position: fixed;
-    pointer-events: none;
-    z-index: 9999;
-    transform: translate(-50%, -50%);
-    transition: transform 0.1s;
-    box-shadow: 0 0 8px var(--green);
-  }
-  #cursor-dot {
-    width: 3px; height: 3px;
-    background: var(--green);
-    border-radius: 50%;
-    position: fixed;
-    pointer-events: none;
-    z-index: 9999;
-    transform: translate(-50%, -50%);
-  }
-
-  /* Scanlines overlay */
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.08) 2px,
-      rgba(0,0,0,0.08) 4px
-    );
-    pointer-events: none;
-    z-index: 100;
-  }
-
-  /* CRT glow vignette */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.6) 100%);
-    pointer-events: none;
-    z-index: 99;
-  }
-
-  #app {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    padding: 8px;
-    gap: 6px;
-  }
-
-  /* ========== HEADER ========== */
-  #header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border: 1px solid var(--border);
-    padding: 6px 14px;
-    background: var(--bg2);
-    flex-shrink: 0;
-    position: relative;
-    overflow: hidden;
-  }
-  #header::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--green), transparent);
-    animation: scanH 3s linear infinite;
-  }
-  @keyframes scanH {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-  }
-
-  .header-logo {
-    font-family: 'VT323', monospace;
-    font-size: 28px;
-    color: var(--green);
-    text-shadow: 0 0 20px var(--green), 0 0 40px var(--green-dim);
-    letter-spacing: 4px;
-  }
-  .header-logo span { color: var(--yellow); }
-
-  .header-stats {
-    display: flex;
-    gap: 20px;
-    font-size: 11px;
-  }
-  .stat-item { display: flex; flex-direction: column; align-items: flex-end; }
-  .stat-label { color: var(--gray); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; }
-  .stat-val { color: var(--green); }
-  .stat-val.yellow { color: var(--yellow); }
-  .stat-val.red { color: var(--red); }
-  .stat-val.cyan { color: var(--cyan); }
-
-  .rep-bar {
-    display: inline-block;
-    width: 80px;
-    height: 6px;
-    background: var(--border);
-    vertical-align: middle;
-    border: 1px solid var(--green-dim);
-    position: relative;
-    overflow: hidden;
-  }
-  .rep-bar-fill {
-    height: 100%;
-    background: var(--green);
-    box-shadow: 0 0 6px var(--green);
-    transition: width 0.5s ease;
-  }
-
-  /* ========== MAIN LAYOUT ========== */
-  #main {
-    display: grid;
-    grid-template-columns: 260px 1fr 220px;
-    gap: 6px;
-    flex: 1;
-    min-height: 0;
-  }
-
-  /* ========== PANELS ========== */
-  .panel {
-    border: 1px solid var(--border);
-    background: var(--bg2);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    position: relative;
-  }
-  .panel-title {
-    font-family: 'VT323', monospace;
-    font-size: 16px;
-    padding: 6px 12px;
-    border-bottom: 1px solid var(--border);
-    background: rgba(0,30,0,0.5);
-    color: var(--green);
-    letter-spacing: 2px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-shrink: 0;
-  }
-  .panel-title .dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 6px var(--green);
-    animation: blink 1.5s ease-in-out infinite;
-  }
-  .panel-title .dot.red { background: var(--red); box-shadow: 0 0 6px var(--red); }
-  .panel-title .dot.yellow { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
-
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
-
-  .panel-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px;
-    scrollbar-width: thin;
-    scrollbar-color: var(--green-dim) transparent;
-  }
-
-  /* ========== CONTRACT BOARD ========== */
-  .contract-item {
-    border: 1px solid var(--border);
-    padding: 8px 10px;
-    margin-bottom: 6px;
-    cursor: pointer;
-    transition: all 0.15s;
-    position: relative;
-    overflow: hidden;
-  }
-  .contract-item:hover, .contract-item.selected {
-    border-color: var(--green);
-    background: rgba(57,255,20,0.05);
-    box-shadow: inset 0 0 15px rgba(57,255,20,0.05), 0 0 8px rgba(57,255,20,0.1);
-  }
-  .contract-item.active-contract {
-    border-color: var(--yellow);
-    background: rgba(245,166,35,0.05);
-  }
-  .contract-item.completed {
-    border-color: var(--gray);
-    opacity: 0.5;
-  }
-  .contract-diff {
-    font-size: 9px;
-    padding: 1px 5px;
-    border: 1px solid;
-    display: inline-block;
-    margin-bottom: 4px;
-  }
-  .diff-easy { color: var(--cyan); border-color: var(--cyan); }
-  .diff-med { color: var(--yellow); border-color: var(--yellow); }
-  .diff-hard { color: var(--red); border-color: var(--red); }
-  .diff-impossible { color: #ff00ff; border-color: #ff00ff; }
-  .contract-name { font-size: 12px; color: var(--green); margin-bottom: 2px; }
-  .contract-meta { font-size: 10px; color: var(--gray); display: flex; justify-content: space-between; }
-  .contract-reward { color: var(--yellow); }
-  .contract-stars { color: var(--yellow); font-size: 11px; }
-  .contract-locked { color: var(--gray); filter: blur(0.5px); }
-
-  /* ========== TERMINAL ========== */
-  #terminal-panel {
-    display: flex;
-    flex-direction: column;
-  }
-
-  #terminal-output {
-    flex: 1;
-    overflow-y: auto;
-    padding: 10px;
-    font-size: 12px;
-    line-height: 1.6;
-    scrollbar-width: thin;
-    scrollbar-color: var(--green-dim) transparent;
-  }
-
-  .t-line { margin-bottom: 1px; }
-  .t-prompt { color: var(--cyan); }
-  .t-cmd { color: var(--green); }
-  .t-output { color: #aaffaa; }
-  .t-error { color: var(--red); }
-  .t-warning { color: var(--yellow); }
-  .t-info { color: var(--blue); }
-  .t-success { color: var(--cyan); text-shadow: 0 0 8px var(--cyan); }
-  .t-system { color: var(--gray); }
-  .t-highlight { color: var(--green); text-shadow: 0 0 8px var(--green); }
-  .t-dim { color: var(--green-dim); }
-  .t-red { color: var(--red); }
-  .t-yellow { color: var(--yellow); }
-
-  #terminal-input-row {
-    display: flex;
-    align-items: center;
-    padding: 8px 10px;
-    border-top: 1px solid var(--border);
-    background: rgba(0,20,0,0.8);
-    flex-shrink: 0;
-    gap: 6px;
-  }
-  #prompt-label {
-    color: var(--cyan);
-    white-space: nowrap;
-    font-size: 12px;
-  }
-  #terminal-input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--green);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 12px;
-    caret-color: var(--green);
-  }
-  #terminal-input::placeholder { color: var(--green-dim); }
-
-  /* Progress bar */
-  .progress-container {
-    margin: 4px 0;
-  }
-  .progress-label { font-size: 11px; margin-bottom: 2px; }
-  .progress-bar {
-    width: 100%;
-    height: 12px;
-    background: var(--border);
-    border: 1px solid var(--green-dim);
-    position: relative;
-    overflow: hidden;
-  }
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--green-dim), var(--green));
-    box-shadow: 0 0 10px var(--green);
-    transition: width 0.1s linear;
-  }
-  .progress-text {
-    position: absolute;
-    right: 6px;
-    top: 0;
-    line-height: 12px;
-    font-size: 9px;
-    color: var(--bg);
-  }
-
-  /* ========== RIGHT PANEL ========== */
-  .trace-section { margin-bottom: 16px; }
-  .trace-label { font-size: 10px; color: var(--gray); letter-spacing: 2px; margin-bottom: 4px; }
-  .trace-bar-outer {
-    width: 100%;
-    height: 16px;
-    background: var(--border);
-    border: 1px solid var(--green-dim);
-    position: relative;
-    overflow: hidden;
-  }
-  .trace-bar-fill {
-    height: 100%;
-    transition: width 0.3s, background 0.3s;
-    box-shadow: 0 0 10px currentColor;
-  }
-  .trace-val {
-    font-family: 'VT323', monospace;
-    font-size: 22px;
-    text-align: right;
-    margin-top: 2px;
-  }
-
-  .objective-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 6px;
-    margin-bottom: 5px;
-    font-size: 11px;
-  }
-  .obj-check { flex-shrink: 0; }
-  .obj-check.done { color: var(--green); }
-  .obj-check.pending { color: var(--gray); }
-  .obj-check.fail { color: var(--red); }
-  .obj-text.done { color: var(--green-dim); text-decoration: line-through; }
-  .obj-text.pending { color: #aaffaa; }
-
-  .tool-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 4px 6px;
-    margin-bottom: 3px;
-    border: 1px solid transparent;
-    font-size: 10px;
-  }
-  .tool-item.owned { border-color: var(--green-dim); }
-  .tool-item.owned .tool-name { color: var(--green); }
-  .tool-item.unowned { border-color: var(--border); }
-  .tool-item.unowned .tool-name { color: var(--gray); }
-  .tool-price { color: var(--yellow); font-size: 9px; }
-  .tool-buy-btn {
-    background: none;
-    border: 1px solid var(--yellow);
-    color: var(--yellow);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 9px;
-    padding: 1px 5px;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .tool-buy-btn:hover { background: var(--yellow); color: var(--bg); }
-  .tool-buy-btn:disabled { border-color: var(--gray); color: var(--gray); cursor: not-allowed; }
-
-  .network-node {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 6px;
-    margin-bottom: 3px;
-    font-size: 10px;
-    border: 1px solid var(--border);
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .network-node:hover { border-color: var(--green-dim); }
-  .network-node.connected { border-color: var(--green); background: rgba(57,255,20,0.05); }
-  .node-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--gray); flex-shrink: 0;
-  }
-  .node-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); animation: blink 2s infinite; }
-  .node-dot.warned { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
-  .node-name { color: #aaffaa; }
-  .node-ip { color: var(--gray); font-size: 9px; }
-
-  .section-divider {
-    border-top: 1px solid var(--border);
-    margin: 10px 0;
-  }
-  .section-heading {
-    font-size: 9px;
-    color: var(--gray);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-  }
-
-  /* Alert flash */
-  @keyframes alertFlash {
-    0%,100% { background: transparent; }
-    50% { background: rgba(255,59,48,0.1); }
-  }
-  .alert-flash { animation: alertFlash 0.3s ease 3; }
-
-  /* Glitch text */
-  @keyframes glitch {
-    0%,100% { text-shadow: 0 0 8px var(--green); transform: none; }
-    20% { text-shadow: -2px 0 var(--red), 2px 0 var(--blue); transform: skewX(-1deg); }
-    40% { text-shadow: 2px 0 var(--red), -2px 0 var(--cyan); transform: skewX(1deg); }
-    60% { text-shadow: 0 0 8px var(--green); transform: none; }
-  }
-  .glitch { animation: glitch 0.15s linear; }
-
-  /* Typing animation */
-  @keyframes typing { from { width: 0; } }
-  .typed {
-    overflow: hidden;
-    white-space: nowrap;
-    display: inline-block;
-  }
-
-  /* ASCII art */
-  .ascii-art {
-    font-family: 'VT323', monospace;
-    font-size: 14px;
-    color: var(--green-dim);
-    line-height: 1.2;
-    white-space: pre;
-  }
-
-  /* Mini map */
-  #mini-map {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 3px;
-    margin-top: 4px;
-  }
-  .map-node {
-    height: 30px;
-    border: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 9px;
-    color: var(--gray);
-    position: relative;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .map-node.active { border-color: var(--green); color: var(--green); background: rgba(57,255,20,0.05); }
-  .map-node.danger { border-color: var(--red); color: var(--red); animation: blink 0.8s infinite; }
-  .map-node:hover { border-color: var(--green-dim); }
-  .map-line {
-    position: absolute;
-    background: var(--green-dim);
-    height: 1px;
-    transform-origin: left center;
-  }
-
-  #status-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 4px 14px;
-    border: 1px solid var(--border);
-    background: var(--bg2);
-    font-size: 10px;
-    color: var(--gray);
-    flex-shrink: 0;
-  }
-  #status-bar .status-item { display: flex; gap: 6px; align-items: center; }
-  #status-bar .status-dot {
-    width: 5px; height: 5px; border-radius: 50%;
-    background: var(--green); box-shadow: 0 0 4px var(--green);
-    animation: blink 2s infinite;
-  }
-
-  /* Notification toast */
-  #toast {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 10px 16px;
-    border: 1px solid var(--green);
-    background: rgba(5,14,4,0.95);
-    color: var(--green);
-    font-size: 12px;
-    z-index: 200;
-    transform: translateX(150%);
-    transition: transform 0.3s;
-    box-shadow: 0 0 20px rgba(57,255,20,0.3);
-    max-width: 280px;
-  }
-  #toast.show { transform: translateX(0); }
-  #toast.error { border-color: var(--red); color: var(--red); box-shadow: 0 0 20px rgba(255,59,48,0.3); }
-  #toast.warning { border-color: var(--yellow); color: var(--yellow); }
-
-  /* Modal */
-  #modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.85);
-    z-index: 150;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    display: none;
-  }
-  #modal-overlay.open { display: flex; }
-  #modal-box {
-    border: 1px solid var(--green);
-    background: var(--bg);
-    padding: 24px;
-    max-width: 480px;
-    width: 90%;
-    box-shadow: 0 0 40px rgba(57,255,20,0.2);
-    position: relative;
-  }
-  #modal-box h2 {
-    font-family: 'VT323', monospace;
-    font-size: 24px;
-    margin-bottom: 12px;
-    letter-spacing: 2px;
-  }
-  #modal-box p { font-size: 12px; line-height: 1.7; color: #aaffaa; margin-bottom: 10px; }
-  .modal-btn {
-    background: none;
-    border: 1px solid var(--green);
-    color: var(--green);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 12px;
-    padding: 6px 16px;
-    cursor: pointer;
-    margin-right: 8px;
-    transition: all 0.15s;
-  }
-  .modal-btn:hover { background: var(--green); color: var(--bg); }
-  .modal-btn.danger { border-color: var(--red); color: var(--red); }
-  .modal-btn.danger:hover { background: var(--red); color: var(--bg); }
-
-  /* Minigame */
-  #minigame-container {
-    display: none;
-    border: 1px solid var(--yellow);
-    background: rgba(0,0,0,0.5);
-    padding: 12px;
-    margin: 6px 0;
-  }
-  #minigame-container.active { display: block; }
-  .mg-title { color: var(--yellow); font-family: 'VT323', monospace; font-size: 18px; margin-bottom: 8px; letter-spacing: 2px; }
-  .mg-grid { display: grid; grid-template-columns: repeat(8, 28px); gap: 3px; margin: 8px 0; }
-  .mg-cell {
-    width: 28px; height: 28px;
-    border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px; cursor: pointer; transition: all 0.1s;
-    color: var(--green-dim);
-  }
-  .mg-cell:hover { border-color: var(--green); color: var(--green); background: rgba(57,255,20,0.1); }
-  .mg-cell.selected { border-color: var(--cyan); color: var(--cyan); background: rgba(0,255,204,0.1); }
-  .mg-cell.correct { border-color: var(--green); color: var(--green); background: rgba(57,255,20,0.2); animation: blink 0.5s 2; }
-  .mg-cell.wrong { border-color: var(--red); color: var(--red); background: rgba(255,59,48,0.1); }
-  .mg-desc { font-size: 11px; color: #aaffaa; margin-bottom: 6px; }
-  .mg-timer {
-    font-family: 'VT323', monospace;
-    font-size: 24px;
-    color: var(--yellow);
-  }
-
-  .scrollbar-thin::-webkit-scrollbar { width: 4px; }
-  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-  .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--green-dim); }
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap');
+:root{--green:#39ff14;--green-dim:#1a7a09;--yellow:#f5a623;--red:#ff3b30;--blue:#00aaff;--cyan:#00ffcc;--gray:#4a4a4a;--bg:#050e04;--bg2:#080f06;--border:#1a3d12}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:var(--bg);color:var(--green);font-family:'Share Tech Mono','Courier New',monospace;font-size:13px;height:100%;overflow:hidden;cursor:none}
+#cursor{width:12px;height:12px;border:1px solid var(--green);border-radius:50%;position:fixed;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);box-shadow:0 0 8px var(--green)}
+#cursor-dot{width:3px;height:3px;background:var(--green);border-radius:50%;position:fixed;pointer-events:none;z-index:9999;transform:translate(-50%,-50%)}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px);pointer-events:none;z-index:100}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.6) 100%);pointer-events:none;z-index:99}
+#app{display:flex;flex-direction:column;height:100vh;padding:8px;gap:6px}
+#header{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border);padding:6px 14px;background:var(--bg2);flex-shrink:0;position:relative;overflow:hidden}
+#header::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--green),transparent);animation:scanH 3s linear infinite}
+@keyframes scanH{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.header-logo{font-family:'VT323',monospace;font-size:28px;color:var(--green);text-shadow:0 0 20px var(--green),0 0 40px var(--green-dim);letter-spacing:4px}
+.header-logo span{color:var(--yellow)}
+.header-stats{display:flex;gap:20px;font-size:11px}
+.stat-item{display:flex;flex-direction:column;align-items:flex-end}
+.stat-label{color:var(--gray);font-size:9px;letter-spacing:2px;text-transform:uppercase}
+.stat-val{color:var(--green)}
+#main{display:grid;grid-template-columns:260px 1fr 220px;gap:6px;flex:1;min-height:0}
+.panel{border:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden}
+.panel-title{font-family:'VT323',monospace;font-size:16px;padding:6px 12px;border-bottom:1px solid var(--border);background:rgba(0,30,0,.5);color:var(--green);letter-spacing:2px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.panel-title .dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:blink 1.5s ease-in-out infinite}
+.panel-title .dot.yellow{background:var(--yellow);box-shadow:0 0 6px var(--yellow)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.panel-body{flex:1;overflow-y:auto;padding:8px;scrollbar-width:thin;scrollbar-color:var(--green-dim) transparent}
+.panel-body::-webkit-scrollbar{width:4px}
+.panel-body::-webkit-scrollbar-thumb{background:var(--green-dim)}
+.contract-item{border:1px solid var(--border);padding:8px 10px;margin-bottom:6px;cursor:pointer;transition:all .15s}
+.contract-item:hover,.contract-item.selected{border-color:var(--green);background:rgba(57,255,20,.05)}
+.contract-item.active-contract{border-color:var(--yellow);background:rgba(245,166,35,.05)}
+.contract-diff{font-size:9px;padding:1px 5px;border:1px solid;display:inline-block;margin-bottom:4px}
+.diff-easy{color:var(--cyan);border-color:var(--cyan)}.diff-med{color:var(--yellow);border-color:var(--yellow)}
+.diff-hard{color:var(--red);border-color:var(--red)}.diff-impossible{color:#f0f;border-color:#f0f}
+.contract-name{font-size:12px;color:var(--green);margin-bottom:2px}
+.contract-meta{font-size:10px;color:var(--gray);display:flex;justify-content:space-between}
+.contract-reward{color:var(--yellow)}.contract-stars{color:var(--yellow);font-size:11px}
+#terminal-output{flex:1;overflow-y:auto;padding:10px;font-size:12px;line-height:1.6;scrollbar-width:thin;scrollbar-color:var(--green-dim) transparent}
+#terminal-output::-webkit-scrollbar{width:4px}
+#terminal-output::-webkit-scrollbar-thumb{background:var(--green-dim)}
+.t-line{margin-bottom:1px}
+.t-output{color:#aaffaa}.t-error{color:var(--red)}.t-warning{color:var(--yellow)}.t-info{color:var(--blue)}
+.t-success{color:var(--cyan);text-shadow:0 0 8px var(--cyan)}.t-system{color:var(--gray)}
+.t-highlight{color:var(--green);text-shadow:0 0 8px var(--green)}.t-dim{color:var(--green-dim)}
+.t-red{color:var(--red)}.t-yellow{color:var(--yellow)}
+.t-prompt{color:var(--cyan)}.t-prompt-c{color:var(--yellow)}.t-cmd{color:var(--green)}
+.ascii-art{font-family:'VT323',monospace;font-size:14px;color:var(--green-dim);line-height:1.2;white-space:pre}
+#terminal-input-row{display:flex;align-items:center;padding:8px 10px;border-top:1px solid var(--border);background:rgba(0,20,0,.8);flex-shrink:0;gap:6px}
+#prompt-label{color:var(--cyan);white-space:nowrap;font-size:12px}
+#terminal-input{flex:1;background:transparent;border:none;outline:none;color:var(--green);font-family:'Share Tech Mono',monospace;font-size:12px;caret-color:var(--green)}
+#terminal-input::placeholder{color:var(--green-dim)}
+.progress-bar{width:100%;height:12px;background:var(--border);border:1px solid var(--green-dim);position:relative;overflow:hidden;margin:4px 0}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--green-dim),var(--green));box-shadow:0 0 10px var(--green);transition:width .1s linear}
+.progress-text{position:absolute;right:6px;top:0;line-height:12px;font-size:9px;color:var(--bg)}
+.trace-label{font-size:10px;color:var(--gray);letter-spacing:2px;margin-bottom:4px}
+.trace-bar-outer{width:100%;height:16px;background:var(--border);border:1px solid var(--green-dim);position:relative;overflow:hidden}
+.trace-bar-fill{height:100%;transition:width .3s,background .3s}
+.trace-val{font-family:'VT323',monospace;font-size:22px;text-align:right;margin-top:2px}
+.objective-item{display:flex;align-items:flex-start;gap:6px;margin-bottom:5px;font-size:11px}
+.obj-check.done{color:var(--green)}.obj-check.pending{color:var(--gray)}
+.obj-text.done{color:var(--green-dim);text-decoration:line-through}.obj-text.pending{color:#aaffaa}
+.tool-item{display:flex;justify-content:space-between;align-items:center;padding:4px 6px;margin-bottom:3px;border:1px solid var(--green-dim);font-size:10px}
+.tool-name{color:var(--green)}
+.network-node{display:flex;align-items:center;gap:6px;padding:4px 6px;margin-bottom:3px;font-size:10px;border:1px solid var(--border);cursor:pointer;transition:all .15s}
+.network-node:hover{border-color:var(--green-dim)}
+.network-node.connected{border-color:var(--green);background:rgba(57,255,20,.05)}
+.node-dot{width:6px;height:6px;border-radius:50%;background:var(--gray);flex-shrink:0}
+.node-dot.active{background:var(--green);box-shadow:0 0 6px var(--green);animation:blink 2s infinite}
+.node-name{color:#aaffaa}.node-ip{color:var(--gray);font-size:9px}
+.section-divider{border-top:1px solid var(--border);margin:10px 0}
+.section-heading{font-size:9px;color:var(--gray);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+#status-bar{display:flex;justify-content:space-between;align-items:center;padding:4px 14px;border:1px solid var(--border);background:var(--bg2);font-size:10px;color:var(--gray);flex-shrink:0}
+#status-bar .status-item{display:flex;gap:6px;align-items:center}
+.status-dot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 4px var(--green);animation:blink 2s infinite}
+#toast{position:fixed;top:20px;right:20px;padding:10px 16px;border:1px solid var(--green);background:rgba(5,14,4,.95);color:var(--green);font-size:12px;z-index:200;transform:translateX(150%);transition:transform .3s;box-shadow:0 0 20px rgba(57,255,20,.3);max-width:280px}
+#toast.show{transform:translateX(0)}
+#toast.error{border-color:var(--red);color:var(--red);box-shadow:0 0 20px rgba(255,59,48,.3)}
+#toast.warning{border-color:var(--yellow);color:var(--yellow)}
+#modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:150;align-items:center;justify-content:center;display:none}
+#modal-overlay.open{display:flex}
+#modal-box{border:1px solid var(--green);background:var(--bg);padding:24px;max-width:480px;width:90%;box-shadow:0 0 40px rgba(57,255,20,.2)}
+#modal-box h2{font-family:'VT323',monospace;font-size:24px;margin-bottom:12px;letter-spacing:2px}
+#modal-box p{font-size:12px;line-height:1.7;color:#aaffaa;margin-bottom:10px}
+.modal-btn{background:none;border:1px solid var(--green);color:var(--green);font-family:'Share Tech Mono',monospace;font-size:12px;padding:6px 16px;cursor:pointer;margin-right:8px;transition:all .15s}
+.modal-btn:hover{background:var(--green);color:var(--bg)}
+.modal-btn.danger{border-color:var(--red);color:var(--red)}
+.modal-btn.danger:hover{background:var(--red);color:var(--bg)}
 </style>
 </head>
 <body>
-
 <div id="cursor"></div>
 <div id="cursor-dot"></div>
-
 <div id="toast"></div>
-
-<!-- Modal -->
 <div id="modal-overlay">
   <div id="modal-box">
     <h2 id="modal-title"></h2>
     <div id="modal-body"></div>
-    <div id="modal-actions" style="margin-top:16px;"></div>
+    <div id="modal-actions" style="margin-top:16px"></div>
   </div>
 </div>
-
 <div id="app">
-  <!-- HEADER -->
   <div id="header">
     <div class="header-logo">HACK<span>NET</span> <span style="font-size:14px;color:var(--gray)">v2.4.1</span></div>
     <div class="header-stats">
-      <div class="stat-item">
-        <span class="stat-label">Connection</span>
-        <span class="stat-val cyan" id="hdr-connection">darknet [enc]</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">User</span>
-        <span class="stat-val" id="hdr-user">anonymous</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">Reputation</span>
-        <span class="stat-val" id="hdr-rep-text">Script Kiddie (0)</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">Credits</span>
-        <span class="stat-val yellow" id="hdr-credits">$0</span>
-      </div>
+      <div class="stat-item"><span class="stat-label">Connection</span><span class="stat-val" style="color:var(--cyan)">darknet [enc]</span></div>
+      <div class="stat-item"><span class="stat-label">User</span><span class="stat-val">anonymous</span></div>
+      <div class="stat-item"><span class="stat-label">Reputation</span><span class="stat-val" id="hdr-rep-text">Script Kiddie (0)</span></div>
+      <div class="stat-item"><span class="stat-label">Credits</span><span class="stat-val" style="color:var(--yellow)" id="hdr-credits">$500</span></div>
     </div>
   </div>
-
-  <!-- MAIN -->
   <div id="main">
-
-    <!-- LEFT: Job Board -->
     <div class="panel">
-      <div class="panel-title">
-        ◈ DARKNET BOARD
-        <div class="dot yellow" id="board-dot"></div>
-      </div>
+      <div class="panel-title">◈ DARKNET BOARD <div class="dot yellow"></div></div>
       <div class="panel-body" id="contract-list"></div>
     </div>
-
-    <!-- CENTER: Terminal -->
-    <div class="panel" id="terminal-panel">
-      <div class="panel-title">
-        ◈ TERMINAL
-        <div style="display:flex;gap:6px;align-items:center;">
+    <div class="panel" style="display:flex;flex-direction:column">
+      <div class="panel-title">◈ TERMINAL
+        <div style="display:flex;gap:6px;align-items:center">
           <span id="connected-label" style="font-size:10px;color:var(--gray)">OFFLINE</span>
           <div class="dot" id="terminal-dot"></div>
         </div>
       </div>
-      <div id="terminal-output" class="panel-body scrollbar-thin"></div>
+      <div id="terminal-output" class="panel-body"></div>
       <div id="terminal-input-row">
         <span id="prompt-label">hacknet@darknet:~$</span>
         <input type="text" id="terminal-input" placeholder="type 'help' for commands..." autocomplete="off" spellcheck="false">
       </div>
     </div>
-
-    <!-- RIGHT: Info Panel -->
     <div class="panel">
-      <div class="panel-title">
-        ◈ STATUS
-        <div class="dot" id="status-dot"></div>
-      </div>
+      <div class="panel-title">◈ STATUS <div class="dot"></div></div>
       <div class="panel-body" id="right-panel">
-
-        <!-- Trace -->
-        <div class="trace-section">
+        <div style="margin-bottom:16px">
           <div class="trace-label">▸ TRACE LEVEL</div>
-          <div class="trace-bar-outer">
-            <div class="trace-bar-fill" id="trace-fill" style="width:0%;background:var(--green);color:var(--green)"></div>
-          </div>
+          <div class="trace-bar-outer"><div class="trace-bar-fill" id="trace-fill" style="width:0%;background:var(--green)"></div></div>
           <div class="trace-val" id="trace-val" style="color:var(--green)">0%</div>
         </div>
-
-        <!-- Active Contract -->
-        <div id="active-contract-section">
-          <div class="section-divider"></div>
-          <div class="section-heading">▸ ACTIVE CONTRACT</div>
-          <div id="active-contract-info" style="color:var(--gray);font-size:11px;">No active contract</div>
-        </div>
-
-        <!-- Objectives -->
-        <div id="objectives-section" style="display:none;">
+        <div class="section-divider"></div>
+        <div class="section-heading">▸ ACTIVE CONTRACT</div>
+        <div id="active-contract-info" style="color:var(--gray);font-size:11px">No active contract</div>
+        <div id="objectives-section" style="display:none">
           <div class="section-divider"></div>
           <div class="section-heading">▸ OBJECTIVES</div>
           <div id="objectives-list"></div>
         </div>
-
-        <!-- Network Map -->
-        <div id="network-section">
-          <div class="section-divider"></div>
-          <div class="section-heading">▸ NETWORK NODES</div>
-          <div id="network-list"></div>
-        </div>
-
-        <!-- Tools -->
-        <div id="tools-section">
-          <div class="section-divider"></div>
-          <div class="section-heading">▸ INSTALLED TOOLS</div>
-          <div id="tools-list"></div>
-        </div>
-
+        <div class="section-divider"></div>
+        <div class="section-heading">▸ NETWORK NODES</div>
+        <div id="network-list"></div>
+        <div class="section-divider"></div>
+        <div class="section-heading">▸ INSTALLED TOOLS</div>
+        <div id="tools-list"></div>
       </div>
     </div>
-
   </div>
-
-  <!-- STATUS BAR -->
   <div id="status-bar">
-    <div class="status-item">
-      <div class="status-dot"></div>
-      <span id="sb-status">CONNECTED TO DARKNET</span>
-    </div>
-    <div class="status-item">
-      <span id="sb-time"></span>
-    </div>
-    <div class="status-item">
-      <span id="sb-packets">PKT: 0</span>
-    </div>
-    <div class="status-item">
-      <span id="sb-hint" style="color:var(--green-dim)">type 'help' for commands</span>
-    </div>
+    <div class="status-item"><div class="status-dot"></div><span>DARKNET CONNECTED</span></div>
+    <div class="status-item"><span id="sb-time"></span></div>
+    <div class="status-item"><span id="sb-packets">PKT: 0</span></div>
+    <div class="status-item"><span style="color:var(--green-dim)">type 'help' for commands</span></div>
   </div>
 </div>
-
 <script>
-// ============================================================
-// GAME STATE
-// ============================================================
-const STATE = {
-  credits: 500,
-  reputation: 0,
-  trace: 0,
-  connected: false,
-  connectedTarget: null,
-  activeContract: null,
-  currentDir: '~',
-  fs: {},           // simulated filesystem for current target
-  packets: 0,
-  time: 0,
-  objectives: {},   // contractId -> {done: [], ...}
-  gainedAccess: false,
-  rootAccess: false,
-  cmdHistory: [],
-  historyIndex: -1,
-  minigameActive: false,
-  tools: ['nmap'],
-  logsCleared: false,
-  downloadedFiles: [],
-  foundVulns: [],
-  portScanned: false,
-  exploitAttempts: 0,
-  mysqlAccess: false,
-  proxychains: 0,   // proxy hops
+// ── HELPERS ──────────────────────────────────────────────────
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+// ── STATE ────────────────────────────────────────────────────
+const S={
+  credits:500,reputation:0,trace:0,
+  connected:false,connectedTarget:null,
+  activeContract:null,currentDir:'~',
+  gainedAccess:false,rootAccess:false,
+  logsCleared:false,downloadedFiles:[],
+  foundVulns:[],portScanned:false,mysqlAccess:false,
+  proxychains:0,objectives:{},
+  cmdHistory:[],historyIndex:-1,packets:0
 };
 
-const TOOLS_SHOP = [
-  { id: 'nmap',       name: 'nmap',        cost: 0,     desc: 'Port scanner' },
-  { id: 'hydra',      name: 'hydra',       cost: 500,   desc: 'Brute-force cracker' },
-  { id: 'john',       name: 'john',        cost: 300,   desc: 'Hash cracker' },
-  { id: 'wireshark',  name: 'wireshark',   cost: 400,   desc: 'Packet sniffer' },
-  { id: 'sqlmap',     name: 'sqlmap',      cost: 1000,  desc: 'SQL injection' },
-  { id: 'burpsuite',  name: 'burpsuite',   cost: 800,   desc: 'Web proxy' },
-  { id: 'metasploit', name: 'metasploit',  cost: 2000,  desc: 'Exploit framework' },
-  { id: 'proxychains',name: 'proxychains', cost: 1200,  desc: 'Hide your IP' },
-  { id: 'aircrack',   name: 'aircrack',    cost: 1500,  desc: 'WiFi cracking' },
+// ── TOOLS ────────────────────────────────────────────────────
+const SHOP=[
+  {id:'nmap',       name:'nmap',        cost:0,    desc:'Port scanner'},
+  {id:'hydra',      name:'hydra',       cost:500,  desc:'Brute-force cracker'},
+  {id:'john',       name:'john',        cost:300,  desc:'Hash cracker'},
+  {id:'wireshark',  name:'wireshark',   cost:400,  desc:'Packet sniffer'},
+  {id:'sqlmap',     name:'sqlmap',      cost:1000, desc:'SQL injection'},
+  {id:'burpsuite',  name:'burpsuite',   cost:800,  desc:'Web proxy'},
+  {id:'metasploit', name:'metasploit',  cost:2000, desc:'Exploit framework'},
+  {id:'proxychains',name:'proxychains', cost:1200, desc:'Hide your IP'},
+  {id:'aircrack',   name:'aircrack',    cost:1500, desc:'WiFi cracking'},
+];
+let playerTools=['nmap'];
+
+const TIERS=[
+  {min:0, max:20, name:'Script Kiddie',color:'#aaffaa'},
+  {min:21,max:40, name:'Hacker',      color:'#00ffcc'},
+  {min:41,max:60, name:'Elite',       color:'#f5a623'},
+  {min:61,max:80, name:'1337',        color:'#ff3b30'},
+  {min:81,max:100,name:'Anonymous',   color:'#ff00ff'},
 ];
 
-const REP_TIERS = [
-  { min: 0,  max: 20,  name: 'Script Kiddie',  color: '#aaffaa' },
-  { min: 21, max: 40,  name: 'Hacker',         color: '#00ffcc' },
-  { min: 41, max: 60,  name: 'Elite',          color: '#f5a623' },
-  { min: 61, max: 80,  name: '1337',           color: '#ff3b30' },
-  { min: 81, max: 100, name: 'Anonymous',      color: '#ff00ff' },
-];
-
-const CONTRACTS = [
+// ── CONTRACTS ────────────────────────────────────────────────
+const CONTRACTS=[
   {
-    id: 'c1',
-    title: 'Acme Corp — Data Exfiltration',
-    client: 'Competitor Inc. (Anonymous)',
-    reward: 15000,
-    repReward: 20,
-    diff: 'hard',
-    diffLabel: 'HARD',
-    stars: '★★★☆☆',
-    target: 'acme.corp',
-    targetIp: '192.168.45.23',
-    os: 'Linux 5.4.0 (Ubuntu 20.04)',
-    minRep: 0,
-    description: 'Infiltrate Acme Corp and steal their Q4 Product Roadmap.',
-    notes: 'Known vuln: Apache 2.4.41 (CVE-2021-41773)',
-    objectives: [
-      { id: 'scan',     text: 'Scan open ports', done: false },
-      { id: 'exploit',  text: 'Exploit Apache vulnerability', done: false },
-      { id: 'escalate', text: 'Escalate to root', done: false },
-      { id: 'download', text: 'Download Q4_Product_Roadmap.pdf', done: false },
-      { id: 'cover',    text: 'Clear access logs', done: false },
+    id:'c1',title:'Acme Corp — Data Exfiltration',
+    client:'Competitor Inc. (Anonymous)',
+    reward:15000,repReward:20,diff:'hard',diffLabel:'HARD',stars:'★★★☆☆',
+    target:'acme.corp',targetIp:'192.168.45.23',os:'Ubuntu 20.04 LTS',minRep:0,
+    notes:'Known vuln: Apache 2.4.41 (CVE-2021-41773)',
+    restrictedPaths:['/root'],
+    objectives:[
+      {id:'scan',    text:'Scan open ports'},
+      {id:'exploit', text:'Exploit Apache vulnerability'},
+      {id:'escalate',text:'Escalate to root'},
+      {id:'download',text:'Download Q4_Product_Roadmap.pdf'},
+      {id:'cover',   text:'Clear access logs'},
     ],
-    services: [
-      { port: 22,   proto: 'tcp', service: 'ssh',   version: 'OpenSSH 7.9' },
-      { port: 80,   proto: 'tcp', service: 'http',  version: 'Apache 2.4.41' },
-      { port: 3306, proto: 'tcp', service: 'mysql', version: 'MySQL 8.0.28' },
+    services:[
+      {port:22,  proto:'tcp',service:'ssh',  version:'OpenSSH 7.9'},
+      {port:80,  proto:'tcp',service:'http', version:'Apache 2.4.41'},
+      {port:3306,proto:'tcp',service:'mysql',version:'MySQL 8.0.28'},
     ],
-    vulns: ['CVE-2021-41773'],
-    files: {
-      '~': ['index.html', 'admin.php', 'config.php'],
-      '/root': ['Q4_Product_Roadmap.pdf', 'secrets.txt', '.bash_history'],
-      '/var/log': ['access.log', 'auth.log', 'syslog'],
-      '/etc': ['passwd', 'shadow', 'hosts'],
+    vulns:['CVE-2021-41773'],
+    files:{
+      '~':[       'index.html','admin.php','config.php'],
+      '/root':[   'Q4_Product_Roadmap.pdf','secrets.txt','.bash_history'],
+      '/var/log':['access.log','auth.log','syslog'],
+      '/etc':[    'passwd','shadow','hosts'],
     },
-    fileContents: {
-      'config.php': ['<?php', '$db_user = "root";', '$db_pass = "root";', '$db_name = "acme_db";', '// TODO: change credentials!', '?>'],
-      'secrets.txt': ['CONFIDENTIAL - DO NOT SHARE', 'Admin password: admin123', 'Backup server: 10.0.0.2', 'CEO email: ceo@acme.corp'],
-      '.bash_history': ['ls -la', 'sudo su -', 'mysql -u root -p', 'cat /etc/shadow', 'history -c'],
-      'access.log': ['192.168.1.1 - - [GET /index.html 200]', '10.0.0.5 - - [POST /admin.php 403]', '172.16.0.3 - - [GET /config.php 200 !!!]'],
-      'passwd': ['root:x:0:0:root:/root:/bin/bash', 'www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin', 'jsmith:x:1001:1001:John Smith:/home/jsmith:/bin/bash'],
+    fileContents:{
+      'config.php':['<?php',"$db_user='root';","$db_pass='root';","$db_name='acme_db';","// TODO: change before prod!",'?>'],
+      'secrets.txt':['CONFIDENTIAL','Admin pass: admin123','CEO: ceo@acme.corp'],
+      '.bash_history':['ls -la','sudo su -','mysql -u root -p','history -c'],
+      'access.log':['192.168.1.1 GET /index.html 200','10.0.0.5 POST /admin.php 403','172.16.0.3 GET /config.php 200 !!!'],
+      'passwd':['root:x:0:0:root:/root:/bin/bash','www-data:x:33:33::/var/www:/usr/sbin/nologin'],
     }
   },
   {
-    id: 'c2',
-    title: 'Stolen Laptop — Photo Recovery',
-    client: 'Jane Doe (Individual)',
-    reward: 2500,
-    repReward: 8,
-    diff: 'easy',
-    diffLabel: 'EASY',
-    stars: '★☆☆☆☆',
-    target: 'localhost',
-    targetIp: '127.0.0.1',
-    os: 'Windows 10 (21H2)',
-    minRep: 0,
-    description: 'Client needs recovery of vacation photos from a locked laptop.',
-    notes: 'User password hint: "favorite band"',
-    objectives: [
-      { id: 'bypass', text: 'Bypass Windows login', done: false },
-      { id: 'locate', text: 'Locate vacation photos folder', done: false },
-      { id: 'recover', text: 'Recover deleted files', done: false },
+    id:'c2',title:'Stolen Laptop — Photo Recovery',
+    client:'Jane Doe (Individual)',
+    reward:2500,repReward:8,diff:'easy',diffLabel:'EASY',stars:'★☆☆☆☆',
+    target:'localhost',targetIp:'127.0.0.1',os:'Windows 10 (21H2)',minRep:0,
+    notes:'Password hint: "favorite band". SMB is open.',
+    restrictedPaths:[],
+    objectives:[
+      {id:'bypass', text:'Bypass Windows login'},
+      {id:'locate', text:'Locate vacation photos'},
+      {id:'recover',text:'Recover deleted files'},
     ],
-    services: [
-      { port: 445, proto: 'tcp', service: 'smb',  version: 'Windows SMB' },
-      { port: 3389, proto: 'tcp', service: 'rdp',  version: 'RDP 10.0' },
+    services:[
+      {port:445, proto:'tcp',service:'smb',version:'Windows SMB 3.0'},
+      {port:3389,proto:'tcp',service:'rdp',version:'RDP 10.0'},
     ],
-    vulns: ['MS17-010'],
-    files: {
-      '~': ['Desktop', 'Documents', 'Pictures', 'Recycle Bin'],
-      '/Pictures': ['IMG_001.jpg', 'IMG_002.jpg', 'Cancun_2024', 'DELETED_FILES'],
-      '/Pictures/Cancun_2024': ['beach.jpg', 'sunset.jpg', 'hotel.jpg', 'margarita.jpg'],
-      '/Recycle Bin': ['deleted_photos_backup.zip', 'wedding_2023.zip'],
+    vulns:['MS17-010'],
+    files:{
+      '~':[                   'Desktop','Documents','Pictures','Recycle Bin'],
+      '/Pictures':[           'IMG_001.jpg','IMG_002.jpg','Cancun_2024','DELETED_FILES'],
+      '/Pictures/Cancun_2024':['beach.jpg','sunset.jpg','hotel.jpg','margarita.jpg'],
+      '/Recycle Bin':[        'deleted_photos_backup.zip','wedding_2023.zip'],
     },
-    fileContents: {
-      'Desktop': ['[ Shortcut: Chrome ]', '[ Shortcut: Spotify ]', 'note_to_self.txt'],
+    fileContents:{
+      'note_to_self.txt':['Password hint: band name + birth year e.g. Nirvana1992'],
     }
   },
   {
-    id: 'c3',
-    title: 'NexGen Bank — Wire Fraud',
-    client: '[ANONYMOUS]',
-    reward: 50000,
-    repReward: 35,
-    diff: 'hard',
-    diffLabel: 'EXPERT',
-    stars: '★★★★☆',
-    target: 'nexgen.bank',
-    targetIp: '10.42.0.1',
-    os: 'Cisco IOS 15.7 / RHEL 8.3',
-    minRep: 30,
-    description: 'Access NexGen Bank internal systems and initiate a fraudulent wire transfer.',
-    notes: 'Bank uses 2FA + IDS. High trace risk. Proxychains recommended.',
-    objectives: [
-      { id: 'scan',     text: 'Enumerate bank network', done: false },
-      { id: 'exploit',  text: 'Exploit web portal (SQLi)', done: false },
-      { id: 'pivot',    text: 'Pivot to internal SWIFT server', done: false },
-      { id: 'transfer', text: 'Initiate wire transfer $1M', done: false },
-      { id: 'cover',    text: 'Cover all transaction logs', done: false },
+    id:'c3',title:'NexGen Bank — Wire Fraud',
+    client:'[ANONYMOUS]',
+    reward:50000,repReward:35,diff:'hard',diffLabel:'EXPERT',stars:'★★★★☆',
+    target:'nexgen.bank',targetIp:'10.42.0.1',os:'RHEL 8.3 / Cisco IOS 15.7',minRep:30,
+    notes:'IDS active. High trace risk. Use proxychains.',
+    restrictedPaths:['/root'],
+    objectives:[
+      {id:'scan',    text:'Enumerate bank network'},
+      {id:'exploit', text:'Exploit web portal (SQLi)'},
+      {id:'pivot',   text:'Pivot to SWIFT server (sudo)'},
+      {id:'transfer',text:'Download transfer_queue.sql'},
+      {id:'cover',   text:'Cover all transaction logs'},
     ],
-    services: [
-      { port: 443,  proto: 'tcp', service: 'https',  version: 'nginx 1.18' },
-      { port: 8080, proto: 'tcp', service: 'http',   version: 'Tomcat 9.0' },
-      { port: 22,   proto: 'tcp', service: 'ssh',    version: 'OpenSSH 8.0' },
-      { port: 9090, proto: 'tcp', service: 'swift',  version: 'SWIFT GPI 2.0' },
+    services:[
+      {port:443, proto:'tcp',service:'https',version:'nginx 1.18'},
+      {port:8080,proto:'tcp',service:'http', version:'Tomcat 9.0'},
+      {port:22,  proto:'tcp',service:'ssh',  version:'OpenSSH 8.0'},
+      {port:9090,proto:'tcp',service:'swift',version:'SWIFT GPI 2.0'},
     ],
-    vulns: ['CVE-2019-0708', 'SQLi-AUTH-BYPASS'],
-    files: {
-      '~': ['portal', 'config', 'logs'],
-      '/swift': ['transactions.db', 'accounts.xml', 'transfer_queue.sql'],
-      '/logs': ['ids.log', 'firewall.log', 'audit_trail.log'],
+    vulns:['CVE-2019-0708','SQLi-AUTH-BYPASS'],
+    files:{
+      '~':     ['portal','config','logs'],
+      '/swift':['transactions.db','accounts.xml','transfer_queue.sql'],
+      '/root': ['master.key','admin_notes.txt'],
+      '/logs': ['ids.log','firewall.log','audit_trail.log'],
     },
-    fileContents: {
-      'accounts.xml': ['<account id="10442" balance="1500000" owner="Executive Corp"/>', '<account id="10443" balance="87500" owner="Jane Smith"/>', '<account id="GHOST" balance="0" type="drop_account"/>'],
+    fileContents:{
+      'accounts.xml':['<account id="10442" balance="1500000" owner="Executive Corp"/>','<account id="GHOST" balance="0" type="drop_account"/>'],
+      'admin_notes.txt':['IDS threshold: 200 req/min','SWIFT password rotates monthly'],
     }
   },
   {
-    id: 'c4',
-    title: 'Operation Silent Night — NSA',
-    client: '[REDACTED]',
-    reward: 250000,
-    repReward: 50,
-    diff: 'impossible',
-    diffLabel: 'IMPOSSIBLE',
-    stars: '★★★★★',
-    target: 'nsa.gov.internal',
-    targetIp: '10.0.0.1',
-    os: 'CLASSIFIED',
-    minRep: 70,
-    description: 'Infiltrate NSA Fort Meade. Locate Project Stargate. Do NOT get caught.',
-    notes: 'Air-gapped network. Zero-day required. One mistake = game over.',
-    objectives: [
-      { id: 'zeroday',  text: 'Deploy zero-day exploit', done: false },
-      { id: 'scan',     text: 'Map air-gapped network', done: false },
-      { id: 'locate',   text: 'Locate CLASSIFIED - Project Stargate', done: false },
-      { id: 'exfil',    text: 'Exfiltrate through 7 proxies', done: false },
-      { id: 'coverall', text: 'Overwrite all logs 7x', done: false },
+    id:'c4',title:'Operation Silent Night — NSA',
+    client:'[REDACTED]',
+    reward:250000,repReward:50,diff:'impossible',diffLabel:'IMPOSSIBLE',stars:'★★★★★',
+    target:'nsa.gov.internal',targetIp:'10.0.0.1',os:'CLASSIFIED',minRep:70,
+    notes:'Air-gapped. Zero-day required. Use proxychains (7 hops). One mistake = game over.',
+    restrictedPaths:['/root','/CLASSIFIED'],
+    objectives:[
+      {id:'zeroday', text:'Deploy zero-day exploit'},
+      {id:'scan',    text:'Map air-gapped network'},
+      {id:'locate',  text:'Locate Project Stargate'},
+      {id:'exfil',   text:'Exfiltrate through 7 proxies'},
+      {id:'coverall',text:'Overwrite all logs 7x'},
     ],
-    services: [
-      { port: 22,   proto: 'tcp', service: 'ssh',       version: 'CLASSIFIED' },
-      { port: 443,  proto: 'tcp', service: 'https',     version: 'CLASSIFIED' },
-      { port: 8443, proto: 'tcp', service: 'classified', version: '???' },
+    services:[
+      {port:22,  proto:'tcp',service:'ssh',       version:'CLASSIFIED'},
+      {port:443, proto:'tcp',service:'https',     version:'CLASSIFIED'},
+      {port:8443,proto:'tcp',service:'classified',version:'???'},
     ],
-    vulns: ['ZERO-DAY-0x4A1F'],
-    files: {
-      '~': ['CLASSIFIED', 'REDACTED', '.secure'],
-      '/CLASSIFIED': ['Project_Stargate.enc', 'Operation_Prism.enc', 'Personnel.enc'],
+    vulns:['ZERO-DAY-0x4A1F'],
+    files:{
+      '~':          ['CLASSIFIED','REDACTED','.secure'],
+      '/CLASSIFIED':['Project_Stargate.enc','Operation_Prism.enc','Personnel.enc'],
+      '/root':      ['zero_day_payload.sh','master_decryption.key'],
     },
-    fileContents: {}
-  }
+    fileContents:{
+      'Project_Stargate.enc':['[AES-256 ENCRYPTED]','Header: STARGATE-EYES-ONLY','Decrypt: gpg --decrypt Project_Stargate.enc'],
+    }
+  },
+  {
+    id:'c5',title:'NeuraSync AI — Model Theft',
+    client:'Rival Corp (Anonymous)',
+    reward:22000,repReward:18,diff:'med',diffLabel:'MEDIUM',stars:'★★☆☆☆',
+    target:'neurasync.ai',targetIp:'172.16.50.10',os:'Ubuntu 22.04 LTS',minRep:12,
+    notes:'Flask app vulnerable to SSTI (CVE-2022-29221). PostgreSQL exposed on 5432.',
+    restrictedPaths:['/root'],
+    objectives:[
+      {id:'scan',    text:'Enumerate target services'},
+      {id:'exploit', text:'Exploit SSTI in Flask app'},
+      {id:'escalate',text:'Escalate privileges to root'},
+      {id:'download',text:'Exfiltrate model_weights.bin'},
+      {id:'cover',   text:'Wipe access logs'},
+    ],
+    services:[
+      {port:22,  proto:'tcp',service:'ssh',       version:'OpenSSH 8.4p1'},
+      {port:5000,proto:'tcp',service:'http',      version:'Flask/Werkzeug 2.0.3'},
+      {port:5432,proto:'tcp',service:'postgresql',version:'PostgreSQL 14.2'},
+    ],
+    vulns:['CVE-2022-29221'],
+    files:{
+      '~':       ['app.py','requirements.txt','templates','data'],
+      '/data':   ['model_config.json','training_data.csv','checkpoint_v37.pt'],
+      '/root':   ['model_weights.bin','api_keys.txt','.ssh'],
+      '/var/log':['flask.log','auth.log','syslog'],
+    },
+    fileContents:{
+      'app.py':['from flask import Flask,render_template_string,request','# VULNERABLE: user input passed directly to render_template_string',
+                '@app.route("/search")','def search():','  return render_template_string(request.args.get("q",""))  # CVE-2022-29221'],
+      'api_keys.txt':['OPENAI_KEY: sk-proj-REDACTED','AWS_SECRET: wJalrXUtnFEMI/EXAMPLE','!!! ROTATE IMMEDIATELY — leaked in git history !!!'],
+      'model_config.json':['{"architecture":"transformer","layers":96,"params":"70B","license":"PROPRIETARY"}'],
+    }
+  },
+  {
+    id:'c6',title:'Operation Phantom — Gov Leak',
+    client:'Journalist Network [Anon]',
+    reward:65000,repReward:42,diff:'hard',diffLabel:'EXPERT',stars:'★★★★☆',
+    target:'darkcov.gov.local',targetIp:'10.1.1.100',os:'Red Hat Enterprise Linux 8.5',minRep:45,
+    notes:'Log4Shell (CVE-2021-44228) via Jira 8.13. Heavy IDS. Proxychains MANDATORY first.',
+    restrictedPaths:['/root','/classified'],
+    objectives:[
+      {id:'scan',    text:'Scan hardened perimeter'},
+      {id:'exploit', text:'Exploit Log4Shell (CVE-2021-44228)'},
+      {id:'pivot',   text:'Pivot to classified document server'},
+      {id:'download',text:'Exfiltrate phantom_files.enc'},
+      {id:'cover',   text:'Destroy all trace evidence'},
+    ],
+    services:[
+      {port:22,  proto:'tcp',service:'ssh',  version:'OpenSSH 7.4p1'},
+      {port:443, proto:'tcp',service:'https',version:'Apache 2.4.51'},
+      {port:389, proto:'tcp',service:'ldap', version:'OpenLDAP 2.4.50'},
+      {port:8443,proto:'tcp',service:'jira', version:'Jira 8.13.0 (Log4j 2.14)'},
+    ],
+    vulns:['CVE-2021-44228'],
+    files:{
+      '~':          ['jira_home','logs','config','scripts'],
+      '/classified':['phantom_files.enc','personnel_records.enc','budget_black.enc'],
+      '/root':      ['phantom_files.enc','master_key.txt','.gnupg'],
+      '/var/log':   ['jira.log','access.log','security_audit.log','auth.log'],
+    },
+    fileContents:{
+      'master_key.txt':['[MASTER DECRYPTION KEY — EYES ONLY]','GPG Fingerprint: 4F2A 9B3C 1D8E 7F6A','Contact: phantom@protonmail.com'],
+      'jira.log':['INFO  [JndiLookup] Lookup: ${jndi:ldap://10.1.1.100/a}','ERROR [log4j] JNDI triggered — CVE-2021-44228','WARN  [IDS] Suspicious activity — flagged'],
+    }
+  },
 ];
 
-// ============================================================
-// INIT / RENDER
-// ============================================================
-function init() {
-  loadState();
-  renderContracts();
-  renderTools();
-  renderNetwork();
-  updateHeader();
-  printBoot();
-  updateTrace();
+// ── TERMINAL OUTPUT ──────────────────────────────────────────
+function out(text,cls='t-output'){
+  const d=document.getElementById('terminal-output');
+  const div=document.createElement('div');
+  div.className='t-line';
+  if(cls==='raw'){div.innerHTML=text}
+  else{const sp=document.createElement('span');sp.className=cls;sp.textContent=text;div.appendChild(sp)}
+  d.appendChild(div);d.scrollTop=d.scrollHeight;
+}
+function outRaw(h){out(h,'raw')}
+function outBlank(){out('','t-system')}
 
-  document.getElementById('terminal-input').addEventListener('keydown', handleInput);
-  document.getElementById('terminal-input').focus();
-
-  // Click to focus terminal
-  document.addEventListener('click', () => {
-    if (!window.getSelection().toString()) {
-      document.getElementById('terminal-input').focus();
-    }
-  });
-
-  // Cursor
-  document.addEventListener('mousemove', e => {
-    document.getElementById('cursor').style.left = e.clientX + 'px';
-    document.getElementById('cursor').style.top = e.clientY + 'px';
-    document.getElementById('cursor-dot').style.left = e.clientX + 'px';
-    document.getElementById('cursor-dot').style.top = e.clientY + 'px';
-  });
-
-  // Clock
-  setInterval(updateClock, 1000);
-  updateClock();
-
-  // Packet counter
-  setInterval(() => {
-    STATE.packets += Math.floor(Math.random() * 20) + 5;
-    document.getElementById('sb-packets').textContent = `PKT: ${STATE.packets.toLocaleString()}`;
-  }, 1500);
-
-  // Ambient trace decay
-  setInterval(() => {
-    if (!STATE.connected && STATE.trace > 0) {
-      STATE.trace = Math.max(0, STATE.trace - 1);
-      updateTrace();
-    }
-  }, 3000);
+function outCmd(raw){
+  const d=document.getElementById('terminal-output');
+  const div=document.createElement('div');div.className='t-line';
+  const cls=S.connected?'t-prompt-c':'t-prompt';
+  const prompt=S.connected?`hacknet@${S.connectedTarget}:${S.currentDir}$`:'hacknet@darknet:~$';
+  div.innerHTML=`<span class="${cls}">${esc(prompt)}</span> <span class="t-cmd">${esc(raw)}</span>`;
+  d.appendChild(div);d.scrollTop=d.scrollHeight;
 }
 
-function loadState() {
-  const saved = localStorage.getItem('hacknet_state');
-  if (saved) {
-    try {
-      const s = JSON.parse(saved);
-      STATE.credits = s.credits || 500;
-      STATE.reputation = s.reputation || 0;
-      STATE.tools = s.tools || ['nmap'];
-    } catch(e) {}
+function outProgress(label,ms,cb){
+  const d=document.getElementById('terminal-output');
+  const div=document.createElement('div');div.className='t-line';
+  const uid='p'+Date.now();
+  div.innerHTML=`<span class="t-warning">${esc(label)}</span><br>
+    <div class="progress-bar"><div class="progress-fill" id="${uid}f" style="width:0%"></div>
+    <span class="progress-text" id="${uid}t">0%</span></div>`;
+  d.appendChild(div);d.scrollTop=d.scrollHeight;
+  let pct=0;
+  const t=setInterval(()=>{
+    pct++;
+    const f=document.getElementById(uid+'f'),tx=document.getElementById(uid+'t');
+    if(f)f.style.width=pct+'%';if(tx)tx.textContent=pct+'%';
+    d.scrollTop=d.scrollHeight;
+    if(pct>=100){clearInterval(t);if(cb)cb();}
+  },ms/100);
+}
+
+function setPrompt(){
+  const el=document.getElementById('prompt-label');
+  const cl=document.getElementById('connected-label');
+  if(S.connected){
+    el.textContent=`hacknet@${S.connectedTarget}:${S.currentDir}$`;
+    el.style.color='var(--yellow)';
+    cl.textContent=`>> ${S.connectedTarget}`;cl.style.color='var(--yellow)';
+  }else{
+    el.textContent='hacknet@darknet:~$';el.style.color='var(--cyan)';
+    cl.textContent='OFFLINE';cl.style.color='var(--gray)';
   }
 }
 
-function saveState() {
-  localStorage.setItem('hacknet_state', JSON.stringify({
-    credits: STATE.credits,
-    reputation: STATE.reputation,
-    tools: STATE.tools,
-  }));
-}
-
-function updateClock() {
-  const now = new Date();
-  document.getElementById('sb-time').textContent =
-    now.toTimeString().slice(0,8) + ' UTC';
-}
-
-// ============================================================
-// BOOT SEQUENCE
-// ============================================================
-function printBoot() {
-  const lines = [
-    { cls: 'ascii-art', text: '██╗  ██╗ █████╗  ██████╗██╗  ██╗███╗   ██╗███████╗████████╗' },
-    { cls: 'ascii-art', text: '██║  ██║██╔══██╗██╔════╝██║ ██╔╝████╗  ██║██╔════╝╚══██╔══╝' },
-    { cls: 'ascii-art', text: '███████║███████║██║     █████╔╝ ██╔██╗ ██║█████╗     ██║   ' },
-    { cls: 'ascii-art', text: '██╔══██║██╔══██║██║     ██╔═██╗ ██║╚██╗██║██╔══╝     ██║   ' },
-    { cls: 'ascii-art', text: '██║  ██║██║  ██║╚██████╗██║  ██╗██║ ╚████║███████╗   ██║   ' },
-    { cls: 'ascii-art', text: '╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝   ╚═╝   ' },
-    { cls: 't-dim',    text: '                    Terminal Hacking Simulator v2.4.1' },
-    { cls: 't-system', text: '' },
-    { cls: 't-system', text: '[ Initializing encrypted darknet connection... ]' },
-    { cls: 't-info',   text: '[ Connected to darknet relay 7 (Tor exit node) ]' },
-    { cls: 't-success',text: '[ Authentication complete. Welcome, anonymous. ]' },
-    { cls: 't-system', text: '' },
-    { cls: 't-output', text: 'Type \'help\' for available commands.' },
-    { cls: 't-output', text: 'Type \'contracts\' to view available jobs.' },
-    { cls: 't-output', text: 'Type \'shop\' to buy tools.' },
-    { cls: 't-system', text: '' },
-  ];
-
-  lines.forEach((l, i) => {
-    setTimeout(() => printLine(l.text, l.cls), i * 40);
-  });
-}
-
-// ============================================================
-// TERMINAL
-// ============================================================
-function printLine(text, cls = 't-output') {
-  const out = document.getElementById('terminal-output');
-  const div = document.createElement('div');
-  div.className = 't-line';
-  if (cls === 'raw') {
-    div.innerHTML = text;
-  } else {
-    const span = document.createElement('span');
-    span.className = cls;
-    span.textContent = text;
-    div.appendChild(span);
+// ── INPUT ────────────────────────────────────────────────────
+function handleInput(e){
+  const inp=document.getElementById('terminal-input');
+  if(e.key==='ArrowUp'){
+    if(S.historyIndex<S.cmdHistory.length-1){S.historyIndex++;inp.value=S.cmdHistory[S.cmdHistory.length-1-S.historyIndex]||'';}
+    e.preventDefault();return;
   }
-  out.appendChild(div);
-  out.scrollTop = out.scrollHeight;
-}
-
-function printCmd(cmd) {
-  const prompt = STATE.connected
-    ? `hacknet@${STATE.connectedTarget}:${STATE.currentDir}$`
-    : `hacknet@darknet:~$`;
-  printLine(`${prompt} ${cmd}`, 'raw');
-}
-
-function printRaw(html) {
-  printLine(html, 'raw');
-}
-
-function printBlank() {
-  printLine('', 't-system');
-}
-
-function printProgress(label, duration, cb) {
-  return new Promise(resolve => {
-    const out = document.getElementById('terminal-output');
-    const div = document.createElement('div');
-    div.className = 't-line';
-    div.innerHTML = `<span class="t-warning">${label}</span><br>
-      <div class="progress-container">
-        <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div>
-        <span class="progress-text" id="prog-text">0%</span></div>
-      </div>`;
-    out.appendChild(div);
-    out.scrollTop = out.scrollHeight;
-
-    let pct = 0;
-    const interval = duration / 100;
-    const timer = setInterval(() => {
-      pct += 1;
-      const fill = div.querySelector('#prog-fill');
-      const txt = div.querySelector('#prog-text');
-      if (fill) fill.style.width = pct + '%';
-      if (txt) txt.textContent = pct + '%';
-      out.scrollTop = out.scrollHeight;
-      if (pct >= 100) {
-        clearInterval(timer);
-        if (cb) cb();
-        resolve();
-      }
-    }, interval);
-  });
-}
-
-function setPromptLabel() {
-  const el = document.getElementById('prompt-label');
-  if (STATE.connected) {
-    el.textContent = `hacknet@${STATE.connectedTarget}:${STATE.currentDir}$`;
-    el.style.color = 'var(--yellow)';
-    document.getElementById('connected-label').textContent = `>> ${STATE.connectedTarget}`;
-    document.getElementById('connected-label').style.color = 'var(--yellow)';
-  } else {
-    el.textContent = 'hacknet@darknet:~$';
-    el.style.color = 'var(--cyan)';
-    document.getElementById('connected-label').textContent = 'OFFLINE';
-    document.getElementById('connected-label').style.color = 'var(--gray)';
+  if(e.key==='ArrowDown'){
+    if(S.historyIndex>0){S.historyIndex--;inp.value=S.cmdHistory[S.cmdHistory.length-1-S.historyIndex]||'';}
+    else{S.historyIndex=-1;inp.value='';}
+    e.preventDefault();return;
   }
+  if(e.key!=='Enter')return;
+  const raw=inp.value.trim();if(!raw)return;
+  S.cmdHistory.push(raw);S.historyIndex=-1;inp.value='';
+  outBlank();outCmd(raw);processCmd(raw);
 }
 
-// ============================================================
-// COMMAND HANDLER
-// ============================================================
-function handleInput(e) {
-  if (STATE.minigameActive) return;
-
-  const input = document.getElementById('terminal-input');
-
-  if (e.key === 'ArrowUp') {
-    if (STATE.historyIndex < STATE.cmdHistory.length - 1) {
-      STATE.historyIndex++;
-      input.value = STATE.cmdHistory[STATE.cmdHistory.length - 1 - STATE.historyIndex] || '';
-    }
-    e.preventDefault();
-    return;
-  }
-  if (e.key === 'ArrowDown') {
-    if (STATE.historyIndex > 0) {
-      STATE.historyIndex--;
-      input.value = STATE.cmdHistory[STATE.cmdHistory.length - 1 - STATE.historyIndex] || '';
-    } else {
-      STATE.historyIndex = -1;
-      input.value = '';
-    }
-    e.preventDefault();
-    return;
-  }
-
-  if (e.key !== 'Enter') return;
-
-  const raw = input.value.trim();
-  if (!raw) return;
-
-  STATE.cmdHistory.push(raw);
-  STATE.historyIndex = -1;
-  input.value = '';
-
-  printBlank();
-  printCmd(raw);
-  processCommand(raw);
-}
-
-function processCommand(raw) {
-  const parts = raw.split(/\s+/);
-  const cmd = parts[0].toLowerCase();
-  const args = parts.slice(1);
-
-  // Disable input during animations
-  const inp = document.getElementById('terminal-input');
-
-  switch(cmd) {
-    case 'help':       cmdHelp(); break;
-    case 'contracts':  cmdContracts(); break;
-    case 'accept':     cmdAccept(args); break;
-    case 'connect':    cmdConnect(args, inp); break;
-    case 'disconnect': cmdDisconnect(); break;
-    case 'nmap':       cmdNmap(args, inp); break;
-    case 'scan':       cmdNmap(args, inp); break;
-    case 'searchsploit': cmdSearchsploit(args); break;
-    case 'exploit':    cmdExploit(args, inp); break;
-    case 'ls':         cmdLs(args); break;
-    case 'cat':        cmdCat(args); break;
-    case 'cd':         cmdCd(args); break;
-    case 'sudo':       cmdSudo(args, inp); break;
-    case 'su':         cmdSudo(args, inp); break;
-    case 'mysql':      cmdMysql(args, inp); break;
-    case 'download':   cmdDownload(args, inp); break;
-    case 'wget':       cmdDownload(args, inp); break;
-    case 'cover_tracks': cmdCoverTracks(inp); break;
-    case 'cover':      cmdCoverTracks(inp); break;
-    case 'clear_logs': cmdCoverTracks(inp); break;
-    case 'submit':     cmdSubmit(); break;
-    case 'shop':       cmdShop(); break;
-    case 'buy':        cmdBuy(args); break;
-    case 'whoami':     cmdWhoami(); break;
-    case 'status':     cmdStatus(); break;
-    case 'ifconfig':   cmdIfconfig(); break;
-    case 'proxy':      cmdProxy(args, inp); break;
-    case 'proxychains': cmdProxy(args, inp); break;
-    case 'hydra':      cmdHydra(args, inp); break;
-    case 'sqlmap':     cmdSqlmap(args, inp); break;
-    case 'clear':      document.getElementById('terminal-output').innerHTML = ''; break;
-    case 'cls':        document.getElementById('terminal-output').innerHTML = ''; break;
-    case 'pwd':        printLine(STATE.currentDir, 't-output'); break;
-    case 'uname':      cmdUname(); break;
-    case 'ps':         cmdPs(); break;
-    case 'history':    cmdHistory(); break;
-    case 'ping':       cmdPing(args, inp); break;
-    case 'traceroute': cmdTraceroute(args, inp); break;
-    case 'exit':       cmdDisconnect(); break;
-    case 'quit':       cmdDisconnect(); break;
+function processCmd(raw){
+  const parts=raw.split(/\s+/);
+  const cmd=parts[0].toLowerCase();
+  const args=parts.slice(1);
+  const inp=document.getElementById('terminal-input');
+  switch(cmd){
+    case 'help':        cmdHelp();break;
+    case 'contracts':   cmdContracts();break;
+    case 'accept':      cmdAccept(args);break;
+    case 'connect':     cmdConnect(args,inp);break;
+    case 'disconnect':case 'exit':case 'quit': cmdDisconnect();break;
+    case 'nmap':case 'scan': cmdNmap(args,inp);break;
+    case 'searchsploit':cmdSearchsploit(args);break;
+    case 'exploit':     cmdExploit(args,inp);break;
+    case 'ls':          cmdLs(args);break;
+    case 'cat':         cmdCat(args);break;
+    case 'cd':          cmdCd(args);break;
+    case 'pwd':         out(S.currentDir);break;
+    case 'sudo':case 'su': cmdSudo(args,inp);break;
+    case 'mysql':       cmdMysql(args,inp);break;
+    case 'download':case 'wget': cmdDownload(args,inp);break;
+    case 'cover_tracks':case 'cover':case 'clear_logs': cmdCover(inp);break;
+    case 'submit':      cmdSubmit();break;
+    case 'shop':        cmdShop();break;
+    case 'buy':         cmdBuy(args);break;
+    case 'whoami':      cmdWhoami();break;
+    case 'status':      cmdStatus();break;
+    case 'ifconfig':    cmdIfconfig();break;
+    case 'proxychains':case 'proxy': cmdProxy(args,inp);break;
+    case 'hydra':       cmdHydra(args,inp);break;
+    case 'sqlmap':      cmdSqlmap(args,inp);break;
+    case 'uname':       cmdUname();break;
+    case 'ps':          cmdPs();break;
+    case 'history':     cmdHistoryList();break;
+    case 'ping':        cmdPing(args,inp);break;
+    case 'traceroute':  cmdTraceroute(args,inp);break;
+    case 'clear':case 'cls': document.getElementById('terminal-output').innerHTML='';break;
     default:
-      printLine(`command not found: ${cmd}`, 't-error');
-      printLine(`try 'help' for available commands`, 't-system');
+      out('command not found: '+cmd,'t-error');
+      out("try 'help' for available commands",'t-system');
   }
-  printBlank();
+  outBlank();
 }
 
-// ============================================================
-// COMMANDS
-// ============================================================
-
-function cmdHelp() {
-  const helpText = [
-    ['GENERAL', null],
-    ['  help',         'Show this help'],
-    ['  contracts',    'List available jobs'],
-    ['  accept <id>',  'Accept a contract'],
-    ['  status',       'Show player status'],
-    ['  shop',         'Browse tool market'],
-    ['  buy <tool>',   'Purchase a tool'],
-    ['  clear',        'Clear terminal'],
-    ['', null],
-    ['NETWORK', null],
-    ['  connect <ip>', 'Connect to target'],
-    ['  disconnect',   'Drop connection'],
-    ['  ping <ip>',    'Ping target'],
-    ['  ifconfig',     'Show network config'],
-    ['  traceroute <ip>', 'Trace route'],
-    ['  proxychains',  'Route through proxies'],
-    ['', null],
-    ['RECON', null],
-    ['  nmap [-sV] <target>', 'Scan open ports'],
-    ['  searchsploit <service> <ver>', 'Search exploits'],
-    ['', null],
-    ['EXPLOITATION', null],
-    ['  exploit <CVE>', 'Run exploit'],
-    ['  hydra <target>', 'Brute-force login'],
-    ['  sqlmap <url>', 'SQL injection'],
-    ['  sudo su -',    'Escalate privileges'],
-    ['', null],
-    ['POST-EXPLOITATION', null],
-    ['  ls [dir]',     'List files'],
-    ['  cat <file>',   'Read file'],
-    ['  cd <dir>',     'Change directory'],
-    ['  download <file>', 'Download file'],
-    ['  mysql -u root -p', 'Access database'],
-    ['  cover_tracks', 'Clear logs'],
-    ['  submit',       'Submit completed contract'],
-  ];
-
-  printBlank();
-  helpText.forEach(([cmd, desc]) => {
-    if (!desc) {
-      printLine(cmd || '', 't-highlight');
-    } else {
-      printRaw(`<span class="t-output" style="display:inline-block;width:200px">${cmd}</span><span class="t-dim">${desc}</span>`);
-    }
-  });
-}
-
-function cmdContracts() {
-  printBlank();
-  printLine('╔══════════════════════════════════════════════════════════════╗', 't-dim');
-  printLine('║                    DARKNET JOB BOARD                        ║', 't-highlight');
-  printLine('╠══════════════════════════════════════════════════════════════╣', 't-dim');
-  CONTRACTS.forEach((c, i) => {
-    const locked = STATE.reputation < c.minRep;
-    const tier = STATE.reputation < c.minRep ? `[LOCKED - Need ${c.minRep} rep]` : '';
-    const cls = locked ? 't-dim' : 't-output';
-    printRaw(`<span class="${cls}">  [${i+1}] <span style="color:${diffColor(c.diff)}">[${c.diffLabel}]</span>  ${c.title}  <span class="t-yellow">$${c.reward.toLocaleString()}</span>  ${c.stars}  ${tier}</span>`);
-  });
-  printLine('╚══════════════════════════════════════════════════════════════╝', 't-dim');
-  printBlank();
-  printLine('Usage: accept <number>', 't-system');
-}
-
-function diffColor(d) {
-  if (d === 'easy') return 'var(--cyan)';
-  if (d === 'hard') return 'var(--red)';
-  if (d === 'impossible') return '#ff00ff';
-  return 'var(--yellow)';
-}
-
-function cmdAccept(args) {
-  if (STATE.connected) {
-    printLine('ERROR: Disconnect from current target first.', 't-error');
-    return;
-  }
-  const idx = parseInt(args[0]) - 1;
-  if (isNaN(idx) || idx < 0 || idx >= CONTRACTS.length) {
-    printLine('Usage: accept <contract number>', 't-error');
-    return;
-  }
-  const c = CONTRACTS[idx];
-  if (STATE.reputation < c.minRep) {
-    printLine(`ERROR: Insufficient reputation. Need ${c.minRep}, have ${STATE.reputation}.`, 't-error');
-    return;
-  }
-
-  STATE.activeContract = c;
-  STATE.gainedAccess = false;
-  STATE.rootAccess = false;
-  STATE.logsCleared = false;
-  STATE.downloadedFiles = [];
-  STATE.foundVulns = [];
-  STATE.portScanned = false;
-  STATE.mysqlAccess = false;
-  STATE.exploitAttempts = 0;
-  STATE.objectives = {};
-  c.objectives.forEach(o => STATE.objectives[o.id] = false);
-
-  printBlank();
-  printLine('CONTRACT ACCEPTED', 't-success');
-  printLine('─'.repeat(60), 't-dim');
-  printLine(`TARGET: ${c.title}`, 't-highlight');
-  printLine(`CLIENT: ${c.client}`, 't-output');
-  printLine(`REWARD: $${c.reward.toLocaleString()}`, 't-output');
-  printLine(`TARGET IP: ${c.targetIp}`, 't-output');
-  printLine(`NOTES: ${c.notes}`, 't-warning');
-  printBlank();
-  printLine(`Connect to target: connect ${c.targetIp}`, 't-system');
-
-  renderContracts();
-  updateActiveContract();
-}
-
-function cmdConnect(args, inp) {
-  if (!args[0]) { printLine('Usage: connect <ip|hostname>', 't-error'); return; }
-  if (!STATE.activeContract) { printLine('ERROR: No active contract. Accept a job first.', 't-error'); return; }
-
-  const target = args[0];
-  const c = STATE.activeContract;
-
-  if (target !== c.targetIp && target !== c.target && target !== 'localhost') {
-    printLine(`ERROR: ${target} - connection refused or no route to host.`, 't-error');
-    addTrace(2);
-    return;
-  }
-
-  inp.disabled = true;
-  printLine(`Connecting to ${target}...`, 't-output');
-
-  printProgress('Establishing encrypted tunnel', 2000, () => {
-    STATE.connected = true;
-    STATE.connectedTarget = target;
-    STATE.currentDir = '~';
-    setPromptLabel();
-    inp.disabled = false;
-    inp.focus();
-
-    printBlank();
-    printRaw(`<span class="t-success">Connection established.</span>`);
-    printBlank();
-    printLine(`Target: ${c.title} (${target})`, 't-output');
-    printLine(`OS: ${c.os}`, 't-output');
-    printBlank();
-    printLine('Run nmap -sV to enumerate services.', 't-system');
-
-    document.getElementById('terminal-dot').className = 'dot yellow';
-    renderNetwork();
-    showToast(`Connected to ${target}`, 'success');
-  });
-}
-
-function cmdDisconnect() {
-  if (!STATE.connected) {
-    printLine('Not connected to any target.', 't-system');
-    return;
-  }
-  printLine(`Dropping connection to ${STATE.connectedTarget}...`, 't-output');
-  printLine('Connection closed.', 't-success');
-  STATE.connected = false;
-  STATE.connectedTarget = null;
-  STATE.currentDir = '~';
-  STATE.gainedAccess = false;
-  STATE.rootAccess = false;
-  setPromptLabel();
-  document.getElementById('terminal-dot').className = 'dot';
-  renderNetwork();
-}
-
-function cmdNmap(args, inp) {
-  if (!STATE.connected) {
-    // Allow scan from darknet
-    printLine('ERROR: Not connected to target. Use: connect <ip>', 't-error');
-    return;
-  }
-  const c = STATE.activeContract;
-  inp.disabled = true;
-
-  printLine(`Starting Nmap scan on ${STATE.connectedTarget}...`, 't-output');
-  printProgress('Scanning ports 1-1000', 2500, () => {
-    inp.disabled = false;
-    inp.focus();
-    addTrace(5);
-
-    printBlank();
-    printLine(`PORT     STATE  SERVICE   VERSION`, 't-highlight');
-    printLine(`─`.repeat(55), 't-dim');
-    c.services.forEach(s => {
-      printRaw(`<span class="t-output">${String(s.port+'/'+s.proto).padEnd(9)} open   ${s.service.padEnd(10)} ${s.version}</span>`);
-    });
-    printBlank();
-
-    // Check for vulns
-    c.services.forEach(s => {
-      if (s.service === 'http' && s.version.includes('Apache 2.4.41')) {
-        printRaw(`<span class="t-red">⚠ ${s.version} — possible CVE-2021-41773 (Path Traversal)</span>`);
-      }
-      if (s.service === 'mysql') {
-        printRaw(`<span class="t-warning">⚠ MySQL exposed — try default credentials (root:root)</span>`);
-      }
-      if (s.service === 'smb') {
-        printRaw(`<span class="t-red">⚠ SMB detected — check MS17-010 (EternalBlue)</span>`);
-      }
-      if (s.service === 'https' || s.service === 'http') {
-        if (c.vulns.includes('SQLi-AUTH-BYPASS')) {
-          printRaw(`<span class="t-red">⚠ Web portal detected — test for SQL injection</span>`);
-        }
-      }
-    });
-
-    STATE.portScanned = true;
-    if (c.objectives && STATE.objectives.hasOwnProperty('scan')) {
-      completeObjective('scan');
-    }
-    printBlank();
-    printLine(`Run 'searchsploit <service> <version>' to find exploits.`, 't-system');
-  });
-}
-
-function cmdSearchsploit(args) {
-  if (args.length < 1) { printLine('Usage: searchsploit <service> [version]', 't-error'); return; }
-  if (!STATE.connected) { printLine('ERROR: Connect to target first.', 't-error'); return; }
-  const query = args.join(' ').toLowerCase();
-  const c = STATE.activeContract;
-
-  printLine(`Searching exploit database for: ${args.join(' ')}`, 't-output');
-  setTimeout(() => {
-    let found = false;
-    c.vulns.forEach(v => {
-      if (query.includes('apache') || query.includes('smb') || query.includes('windows') ||
-          query.includes('mysql') || query.includes('http') || query.includes('sql') ||
-          query.includes('nginx') || query.includes('2.4') || query.includes('0708')) {
-        found = true;
-        printRaw(`<span class="t-success">  [FOUND] ${v}</span>`);
-        STATE.foundVulns.push(v);
-      }
-    });
-    if (!found) {
-      printLine('  No exploits found for that query.', 't-dim');
-      printLine(`  Try: searchsploit ${c.services[0].service} ${c.services[0].version}`, 't-system');
-    } else {
-      printBlank();
-      printLine(`  Run: exploit ${c.vulns[0]}`, 't-system');
-    }
-  }, 800);
-}
-
-function cmdExploit(args, inp) {
-  if (!args[0]) { printLine('Usage: exploit <CVE>', 't-error'); return; }
-  if (!STATE.connected) { printLine('ERROR: Connect to target first.', 't-error'); return; }
-  const c = STATE.activeContract;
-  const cve = args[0].toUpperCase();
-
-  if (!c.vulns.some(v => v.toUpperCase() === cve)) {
-    printLine(`ERROR: ${cve} — exploit not applicable to this target.`, 't-error');
-    printLine(`Run 'searchsploit' to find applicable exploits.`, 't-system');
-    addTrace(3);
-    return;
-  }
-
-  if (STATE.gainedAccess) {
-    printLine('Already have shell access on this target.', 't-warning');
-    return;
-  }
-
-  inp.disabled = true;
-  STATE.exploitAttempts++;
-
-  printLine(`[*] Loading exploit module: ${cve}`, 't-output');
-  printLine(`[*] Configuring payload...`, 't-output');
-  addTrace(8);
-
-  printProgress(`Injecting exploit payload`, 3000, () => {
-    inp.disabled = false;
-    inp.focus();
-
-    const success = Math.random() > 0.15; // 85% success
-    if (success) {
-      STATE.gainedAccess = true;
-      printBlank();
-      printRaw(`<span class="t-success">✓ EXPLOIT SUCCESSFUL</span>`);
-      printLine(`Shell access obtained as www-data`, 't-success');
-      printLine(`UID=33(www-data) GID=33(www-data)`, 't-output');
-      printBlank();
-      printLine(`Run 'ls' to explore the filesystem.`, 't-system');
-      printLine(`Run 'sudo su -' to escalate privileges.`, 't-system');
-
-      if (STATE.objectives.hasOwnProperty('exploit')) completeObjective('exploit');
-      if (STATE.objectives.hasOwnProperty('bypass')) completeObjective('bypass');
-      if (STATE.objectives.hasOwnProperty('zeroday')) completeObjective('zeroday');
-      setPromptLabel();
-    } else {
-      printRaw(`<span class="t-red">✗ EXPLOIT FAILED — Target patched or IDS blocked</span>`);
-      addTrace(15);
-      printLine(`Try again or use metasploit for better reliability.`, 't-system');
-    }
-  });
-}
-
-function cmdSudo(args, inp) {
-  if (!STATE.connected) { printLine('Not connected.', 't-error'); return; }
-  if (!STATE.gainedAccess) { printLine('ERROR: No shell access. Exploit first.', 't-error'); return; }
-  if (STATE.rootAccess) { printLine('Already running as root.', 't-system'); return; }
-
-  inp.disabled = true;
-  printLine('Password:', 't-output');
-
-  setTimeout(() => {
-    inp.disabled = false;
-    inp.focus();
-    addTrace(10);
-
-    // Try common passwords
-    printLine(`[ Attempting common passwords... ]`, 't-dim');
-    setTimeout(() => {
-      printLine('admin123 ... ✓', 't-success');
-      STATE.rootAccess = true;
-      printBlank();
-      printRaw(`<span class="t-red">ROOT ACCESS GRANTED</span>`);
-      printLine('UID=0(root) GID=0(root)', 't-output');
-      setPromptLabel();
-      addTrace(15);
-
-      if (STATE.objectives.hasOwnProperty('escalate')) completeObjective('escalate');
-      if (STATE.objectives.hasOwnProperty('pivot')) completeObjective('pivot');
-      printBlank();
-      printLine(`cd /root to access root files`, 't-system');
-    }, 1200);
-  }, 800);
-}
-
-function cmdLs(args) {
-  if (!STATE.connected) { printLine('Not connected.', 't-error'); return; }
-  if (!STATE.gainedAccess) { printLine('No access. Run exploit first.', 't-error'); return; }
-
-  const c = STATE.activeContract;
-  const dir = args[0] ? (args[0].startsWith('/') ? args[0] : STATE.currentDir + '/' + args[0]) : STATE.currentDir;
-  const normalDir = dir.replace('/~', '').replace('~/', '/') || '~';
-
-  // Root dir check
-  if ((normalDir === '/root' || dir.includes('/root')) && !STATE.rootAccess) {
-    printLine('Permission denied.', 't-error');
-    addTrace(5);
-    return;
-  }
-
-  const files = c.files[normalDir] || c.files['~'];
-  if (!files) {
-    printLine(`ls: cannot access '${dir}': No such file or directory`, 't-error');
-    return;
-  }
-
-  addTrace(1);
-  printBlank();
-  files.forEach(f => {
-    const isDir = c.files['/' + f] || c.files[f];
-    const color = isDir ? 'var(--blue)' : f.endsWith('.pdf') || f.endsWith('.enc') ? 'var(--yellow)' : 'var(--green)';
-    printRaw(`<span style="color:${color}">${isDir ? 'd' : '-'}rw-r--r--  1  root  root  ${isDir ? '4096' : Math.floor(Math.random()*50000+1000)}  ${f}</span>`);
-  });
-}
-
-function cmdCd(args) {
-  if (!STATE.connected) { printLine('Not connected.', 't-error'); return; }
-  if (!STATE.gainedAccess) { printLine('No access.', 't-error'); return; }
-  const c = STATE.activeContract;
-
-  let newDir = args[0] || '~';
-  if (newDir === '..') {
-    const parts = STATE.currentDir.split('/').filter(Boolean);
-    parts.pop();
-    newDir = parts.length ? '/' + parts.join('/') : '~';
-  } else if (!newDir.startsWith('/')) {
-    newDir = '/' + newDir;
-  }
-
-  if (newDir.includes('root') && !STATE.rootAccess) {
-    printLine('Permission denied.', 't-error');
-    addTrace(3);
-    return;
-  }
-
-  STATE.currentDir = newDir === '/~' ? '~' : newDir;
-  setPromptLabel();
-  addTrace(1);
-}
-
-function cmdCat(args) {
-  if (!STATE.connected) { printLine('Not connected.', 't-error'); return; }
-  if (!STATE.gainedAccess) { printLine('No access.', 't-error'); return; }
-  if (!args[0]) { printLine('Usage: cat <file>', 't-error'); return; }
-
-  const c = STATE.activeContract;
-  const file = args[0];
-
-  if (file.includes('shadow') && !STATE.rootAccess) {
-    printLine('Permission denied: shadow requires root.', 't-error');
-    addTrace(5);
-    return;
-  }
-
-  const content = c.fileContents[file];
-  if (!content) {
-    // Generic response
-    if (file.endsWith('.pdf') || file.endsWith('.enc')) {
-      printLine(`cat: ${file}: Binary file, use 'download' to exfiltrate.`, 't-warning');
-    } else {
-      printLine(`cat: ${file}: No such file or directory`, 't-error');
-    }
-    return;
-  }
-
-  addTrace(2);
-  printBlank();
-  content.forEach(line => printLine(line, 't-output'));
-
-  if (file === 'config.php') {
-    printBlank();
-    printLine('[ Database credentials found! ]', 't-success');
-  }
-  if (file === 'secrets.txt') {
-    printLine('[ Sensitive data discovered! ]', 't-warning');
-  }
-}
-
-function cmdMysql(args, inp) {
-  if (!STATE.connected) { printLine('Not connected.', 't-error'); return; }
-  if (!STATE.gainedAccess) { printLine('No access.', 't-error'); return; }
-  const c = STATE.activeContract;
-  const hasMySQL = c.services.some(s => s.service === 'mysql');
-  if (!hasMySQL) { printLine('ERROR: No MySQL service on this target.', 't-error'); return; }
-
-  inp.disabled = true;
-  printLine('Password:', 't-output');
-  setTimeout(() => {
-    inp.disabled = false;
-    inp.focus();
-    printLine('root', 't-dim');
-    addTrace(8);
-    setTimeout(() => {
-      STATE.mysqlAccess = true;
-      printBlank();
-      printLine('Welcome to the MySQL monitor.', 't-success');
-      printLine('mysql> SELECT * FROM users;', 't-highlight');
-      printBlank();
-      printLine('+----+----------+-------------------------+----------+', 't-dim');
-      printLine('| id | username | email                   | password |', 't-output');
-      printLine('+----+----------+-------------------------+----------+', 't-dim');
-      printLine('|  1 | admin    | admin@acme.com          | [hash]   |', 't-output');
-      printLine('|  2 | jsmith   | john.smith@acme.com     | [hash]   |', 't-output');
-      printLine('|  3 | ceo      | ceo@acme.com            | [hash]   |', 't-output');
-      printLine('+----+----------+-------------------------+----------+', 't-dim');
-      printBlank();
-      printLine('[ Database access confirmed! 3 user records exfiltrated. ]', 't-success');
-    }, 800);
-  }, 600);
-}
-
-function cmdDownload(args, inp) {
-  if (!STATE.connected) { printLine('Not connected.', 't-error'); return; }
-  if (!STATE.gainedAccess) { printLine('No access. Exploit target first.', 't-error'); return; }
-  if (!args[0]) { printLine('Usage: download <filename>', 't-error'); return; }
-
-  const file = args[0];
-  const c = STATE.activeContract;
-
-  // Check file accessibility
-  const allFiles = Object.values(c.files).flat();
-  if (!allFiles.includes(file)) {
-    printLine(`download: ${file}: No such file or directory`, 't-error');
-    return;
-  }
-
-  if ((file.includes('Roadmap') || file.includes('CLASSIFIED') || file.includes('Stargate')) && !STATE.rootAccess) {
-    printLine('Permission denied: Need root access.', 't-error');
-    addTrace(3);
-    return;
-  }
-
-  inp.disabled = true;
-  addTrace(12);
-
-  printLine(`Initiating secure download: ${file}`, 't-output');
-  printProgress(`Downloading ${file}`, 2500, () => {
-    inp.disabled = false;
-    inp.focus();
-
-    STATE.downloadedFiles.push(file);
-    printRaw(`<span class="t-success">✓ ${file} downloaded successfully</span>`);
-    printLine(`Saved to: /home/hacknet/loot/${file}`, 't-output');
-    showToast(`File downloaded: ${file}`, 'success');
-
-    // Check contract objectives
-    if (c.id === 'c1' && file === 'Q4_Product_Roadmap.pdf') {
-      completeObjective('download');
-    }
-    if (c.id === 'c2' && (file.includes('beach') || file.includes('Cancun') || file.includes('sunset'))) {
-      completeObjective('locate');
-    }
-    if (c.id === 'c2' && file.includes('deleted')) {
-      completeObjective('recover');
-    }
-    if (c.id === 'c3' && file.includes('transfer')) {
-      completeObjective('transfer');
-    }
-    if (c.id === 'c4' && file.includes('Stargate')) {
-      completeObjective('locate');
-    }
-  });
-}
-
-function cmdCoverTracks(inp) {
-  if (!STATE.connected && !STATE.gainedAccess) {
-    printLine('ERROR: Must be connected to clear tracks.', 't-error');
-    return;
-  }
-  if (!STATE.gainedAccess) { printLine('ERROR: No access.', 't-error'); return; }
-
-  inp.disabled = true;
-  printLine('[ INITIATING LOG WIPE ]', 't-warning');
-
-  const logs = ['auth.log', 'access.log', 'syslog', 'bash_history', 'wtmp', 'lastlog'];
-  let i = 0;
-  const next = () => {
-    if (i >= logs.length) {
-      inp.disabled = false;
-      inp.focus();
-      STATE.logsCleared = true;
-      addTrace(-20); // Reduce trace
-      printBlank();
-      printLine('[ All logs overwritten (7-pass Gutmann) ]', 't-success');
-      printLine('[ Bash history cleared ]', 't-success');
-      printLine('[ Timestamps randomized ]', 't-success');
-      showToast('Tracks covered successfully', 'success');
-      completeObjective('cover');
-      completeObjective('coverall');
-      return;
-    }
-    setTimeout(() => {
-      printLine(`  Overwriting /var/log/${logs[i]}... ✓`, 't-dim');
-      i++;
-      next();
-    }, 200);
+// ── COMMANDS ─────────────────────────────────────────────────
+function cmdHelp(){
+  const sec=(title,rows)=>{
+    out(title,'t-highlight');
+    rows.forEach(([c,d])=>outRaw(`<span class="t-output" style="display:inline-block;width:210px">&nbsp;&nbsp;${esc(c)}</span><span class="t-dim">${esc(d)}</span>`));
+    outBlank();
   };
-  setTimeout(next, 500);
+  outBlank();
+  sec('GENERAL',[['help','This help'],['contracts','List available jobs'],['accept <n>','Accept contract #n'],['status','Player stats'],['shop','Browse tools'],['buy <tool>','Purchase tool'],['clear','Clear terminal']]);
+  sec('NETWORK',[['connect <ip>','Connect to target'],['disconnect','Drop connection'],['ping <ip>','Ping host'],['ifconfig','Network interfaces'],['traceroute <ip>','Trace route'],['proxychains','Build proxy chain']]);
+  sec('RECON',[['nmap [-sV]','Scan ports & services'],['searchsploit <svc>','Search exploit-db']]);
+  sec('EXPLOITATION',[['exploit <CVE>','Run exploit module'],['hydra','Brute-force credentials'],['sqlmap','SQL injection attack'],['sudo su -','Escalate to root']]);
+  sec('POST-EXPLOITATION',[['ls [dir]','List directory'],['cat <file>','Read file'],['cd <dir>','Change directory'],['download <file>','Exfiltrate file'],['mysql -u root -p','Access MySQL'],['cover_tracks','Wipe logs'],['submit','Submit contract']]);
 }
 
-function cmdSubmit() {
-  if (!STATE.activeContract) {
-    printLine('ERROR: No active contract.', 't-error');
+function cmdContracts(){
+  outBlank();
+  out('╔══════════════════════════════════════════════════════════════╗','t-dim');
+  out('║                    DARKNET JOB BOARD                        ║','t-highlight');
+  out('╠══════════════════════════════════════════════════════════════╣','t-dim');
+  CONTRACTS.forEach((c,i)=>{
+    const locked=S.reputation<c.minRep;
+    const dc=c.diff==='easy'?'var(--cyan)':c.diff==='hard'?'var(--red)':c.diff==='impossible'?'#f0f':'var(--yellow)';
+    const lock=locked?`  <span style="color:var(--gray)">[LOCKED — ${c.minRep} REP]</span>`:'';
+    const cls=locked?'t-dim':'t-output';
+    outRaw(`<span class="${cls}">  [${i+1}] <span style="color:${dc}">[${c.diffLabel}]</span>  ${esc(c.title)}  <span style="color:var(--yellow)">$${c.reward.toLocaleString()}</span>  ${c.stars}${lock}</span>`);
+  });
+  out('╚══════════════════════════════════════════════════════════════╝','t-dim');
+  outBlank();out("Usage: accept <number>",'t-system');
+}
+
+function cmdAccept(args){
+  if(S.connected){out('ERROR: Disconnect first.','t-error');return;}
+  const idx=parseInt(args[0])-1;
+  if(isNaN(idx)||idx<0||idx>=CONTRACTS.length){out('Usage: accept <number>','t-error');return;}
+  const c=CONTRACTS[idx];
+  if(S.reputation<c.minRep){out(`ERROR: Need ${c.minRep} REP, have ${S.reputation}.`,'t-error');return;}
+  S.activeContract=c;
+  S.gainedAccess=false;S.rootAccess=false;S.logsCleared=false;
+  S.downloadedFiles=[];S.foundVulns=[];S.portScanned=false;S.mysqlAccess=false;
+  S.objectives={};c.objectives.forEach(o=>S.objectives[o.id]=false);
+  outBlank();out('CONTRACT ACCEPTED','t-success');out('─'.repeat(60),'t-dim');
+  out(`TARGET : ${c.title}`,'t-highlight');out(`CLIENT : ${c.client}`);
+  out(`REWARD : $${c.reward.toLocaleString()} + ${c.repReward} REP`);
+  out(`IP     : ${c.targetIp}`);out(`OS     : ${c.os}`);
+  out(`NOTES  : ${c.notes}`,'t-warning');outBlank();
+  out(`Next: connect ${c.targetIp}`,'t-system');
+  renderContracts();updateActiveContract();
+}
+
+function cmdConnect(args,inp){
+  if(!args[0]){out('Usage: connect <ip>','t-error');return;}
+  if(!S.activeContract){out("ERROR: Accept a contract first.",'t-error');return;}
+  const c=S.activeContract;
+  if(args[0]!==c.targetIp&&args[0]!==c.target){out(`ERROR: ${args[0]} — no route to host.`,'t-error');addTrace(2);return;}
+  if(c.id==='c6'&&S.proxychains<4){out('WARNING: No proxychains active — IDS will detect you!','t-warning');addTrace(10);}
+  inp.disabled=true;out(`Connecting to ${args[0]}...`);
+  outProgress('Establishing encrypted tunnel',2000,()=>{
+    S.connected=true;S.connectedTarget=args[0];S.currentDir='~';
+    setPrompt();inp.disabled=false;inp.focus();
+    outBlank();out(`Connection established to ${args[0]}.`,'t-success');
+    out(`Target : ${c.title}`);out(`OS     : ${c.os}`);outBlank();
+    out("Run 'nmap' to enumerate services.",'t-system');
+    document.getElementById('terminal-dot').className='dot yellow';
+    renderNetwork();showToast(`Connected to ${args[0]}`,'success');
+  });
+}
+
+function cmdDisconnect(){
+  if(!S.connected){out('Not connected.','t-system');return;}
+  out(`Dropping connection to ${S.connectedTarget}...`);out('Connection closed.','t-success');
+  S.connected=false;S.connectedTarget=null;S.currentDir='~';S.gainedAccess=false;S.rootAccess=false;
+  setPrompt();document.getElementById('terminal-dot').className='dot';renderNetwork();
+}
+
+function cmdNmap(args,inp){
+  if(!S.connected){out('ERROR: Connect to target first.','t-error');return;}
+  const c=S.activeContract;inp.disabled=true;
+  out(`Starting Nmap scan on ${S.connectedTarget}...`);
+  outProgress('Scanning ports 1-65535',2500,()=>{
+    inp.disabled=false;inp.focus();addTrace(5);
+    outBlank();out('PORT      STATE  SERVICE      VERSION','t-highlight');out('─'.repeat(55),'t-dim');
+    c.services.forEach(sv=>{
+      outRaw(`<span class="t-output">${esc((sv.port+'/'+sv.proto).padEnd(10))}open   ${esc(sv.service.padEnd(13))} ${esc(sv.version)}</span>`);
+    });
+    outBlank();
+    c.services.forEach(sv=>{
+      const v=sv.version.toLowerCase();
+      if(sv.service==='http'&&v.includes('apache 2.4.41'))outRaw(`<span class="t-red">⚠ ${esc(sv.version)} — CVE-2021-41773 (Path Traversal/RCE)</span>`);
+      if(sv.service==='mysql'||sv.service==='postgresql')outRaw(`<span class="t-warning">⚠ ${esc(sv.service)} exposed — try default credentials</span>`);
+      if(sv.service==='smb')outRaw(`<span class="t-red">⚠ SMB — check MS17-010 (EternalBlue)</span>`);
+      if((sv.service==='https'||sv.service==='http')&&c.vulns.includes('SQLi-AUTH-BYPASS'))outRaw(`<span class="t-red">⚠ Web portal — test for SQL injection</span>`);
+      if(sv.service==='http'&&v.includes('flask'))outRaw(`<span class="t-red">⚠ Flask/Werkzeug — check SSTI (CVE-2022-29221)</span>`);
+      if(sv.service==='jira')outRaw(`<span class="t-red">⚠ Jira + Log4j 2.14 — CRITICAL: CVE-2021-44228</span>`);
+    });
+    S.portScanned=true;
+    if(S.objectives.hasOwnProperty('scan'))completeObj('scan');
+    outBlank();out("Run 'searchsploit <service>' to find exploits.",'t-system');
+  });
+}
+
+function cmdSearchsploit(args){
+  if(!args.length){out('Usage: searchsploit <service> [version]','t-error');return;}
+  if(!S.connected){out('ERROR: Connect to target first.','t-error');return;}
+  const q=args.join(' ').toLowerCase();const c=S.activeContract;
+  out(`Searching exploit-db for: ${args.join(' ')}`);
+  setTimeout(()=>{
+    const keywords=['apache','smb','windows','mysql','http','sql','nginx','tomcat','flask','jinja','ssti','log4','jira','ldap','postgresql','rdp','swift','werkzeug','2.4','0708','cve'];
+    const svcMatch=c.services.some(sv=>q.includes(sv.service.toLowerCase())||sv.version.toLowerCase().split(/[\s./]/).some(w=>w.length>2&&q.includes(w)));
+    const kwMatch=keywords.some(k=>q.includes(k));
+    if(svcMatch||kwMatch){
+      c.vulns.forEach(v=>{outRaw(`<span class="t-success">  [FOUND] ${esc(v)}</span>`);S.foundVulns.push(v);});
+      outBlank();out(`  Run: exploit ${c.vulns[0]}`,'t-system');
+    }else{
+      out('  No results. Try service name or version number.','t-dim');
+      out(`  Try: searchsploit ${c.services[0].service}`,'t-system');
+    }
+  },800);
+}
+
+function cmdExploit(args,inp){
+  if(!args[0]){out('Usage: exploit <CVE>','t-error');return;}
+  if(!S.connected){out('ERROR: Connect first.','t-error');return;}
+  const c=S.activeContract;const cve=args[0].toUpperCase();
+  if(!c.vulns.some(v=>v.toUpperCase()===cve)){out(`ERROR: ${cve} not applicable.`,'t-error');addTrace(3);return;}
+  if(S.gainedAccess){out('Already have shell access.','t-warning');return;}
+  inp.disabled=true;out(`[*] Loading: ${cve}`);out('[*] Configuring payload...');addTrace(8);
+  outProgress('Injecting exploit payload',3000,()=>{
+    inp.disabled=false;inp.focus();
+    const ok=Math.random()>(playerTools.includes('metasploit')?0.05:0.15);
+    if(ok){
+      S.gainedAccess=true;outBlank();
+      outRaw(`<span class="t-success">✓ EXPLOIT SUCCESSFUL — ${esc(cve)}</span>`);
+      out('Shell obtained as www-data','t-success');out('uid=33(www-data) gid=33(www-data)');outBlank();
+      out("Run 'ls' to explore. Run 'sudo su -' to escalate.",'t-system');
+      ['exploit','bypass','zeroday'].forEach(id=>{if(S.objectives.hasOwnProperty(id))completeObj(id);});
+      setPrompt();
+    }else{
+      outRaw(`<span class="t-red">✗ EXPLOIT FAILED — WAF or IDS blocked</span>`);
+      addTrace(15);out('Retry or buy metasploit for higher success rate.','t-system');
+    }
+  });
+}
+
+function cmdSudo(args,inp){
+  if(!S.connected){out('Not connected.','t-error');return;}
+  if(!S.gainedAccess){out('ERROR: No shell. Run exploit first.','t-error');return;}
+  if(S.rootAccess){out('Already root.','t-system');return;}
+  inp.disabled=true;out('[sudo] password for www-data:');addTrace(10);
+  setTimeout(()=>{out('Trying common passwords...','t-dim');
+    setTimeout(()=>{
+      inp.disabled=false;inp.focus();
+      out('admin123 ... ✓','t-success');S.rootAccess=true;
+      outBlank();outRaw(`<span class="t-red">ROOT ACCESS GRANTED</span>`);
+      out('uid=0(root) gid=0(root)');setPrompt();addTrace(15);
+      ['escalate','pivot'].forEach(id=>{if(S.objectives.hasOwnProperty(id))completeObj(id);});
+      outBlank();out("cd /root to access root files.",'t-system');
+    },1200);
+  },800);
+}
+
+function cmdLs(args){
+  if(!S.connected){out('Not connected.','t-error');return;}
+  if(!S.gainedAccess){out('No access. Run exploit first.','t-error');return;}
+  const c=S.activeContract;
+  let dir=args[0]?( args[0].startsWith('/')||args[0]==='~'?args[0]: (S.currentDir==='~'?'/'+args[0]:S.currentDir+'/'+args[0]) ):S.currentDir;
+  if(c.restrictedPaths&&c.restrictedPaths.some(p=>dir===p||dir.startsWith(p+'/'))&&!S.rootAccess){out('Permission denied.','t-error');addTrace(5);return;}
+  const files=c.files[dir];
+  if(!files){out(`ls: cannot access '${dir}': No such file or directory`,'t-error');return;}
+  addTrace(1);outBlank();
+  files.forEach(f=>{
+    const abs='/'+f,rel=(dir==='~'?'/'+f:dir+'/'+f);
+    const isDir=!!(c.files[abs]||c.files[rel]);
+    const color=isDir?'var(--blue)':(f.endsWith('.pdf')||f.endsWith('.enc')||f.endsWith('.bin')||f.endsWith('.pt'))?'var(--yellow)':'var(--green)';
+    const perm=isDir?'drwxr-xr-x':'-rw-r--r--';const sz=isDir?'4096':String(Math.floor(Math.random()*50000+1000));
+    outRaw(`<span style="color:${color}">${perm}  1 root root  ${sz.padStart(6)}  ${esc(f)}</span>`);
+  });
+}
+
+function cmdCd(args){
+  if(!S.connected){out('Not connected.','t-error');return;}
+  if(!S.gainedAccess){out('No access.','t-error');return;}
+  const c=S.activeContract;let nd=args[0]||'~';
+  if(nd==='~'){nd='~';}
+  else if(nd==='..'){
+    if(S.currentDir==='~'){nd='~';}
+    else{const p=S.currentDir.split('/').filter(Boolean);p.pop();nd=p.length?'/'+p.join('/'):'~';}
+  }else if(!nd.startsWith('/')){nd=S.currentDir==='~'?'/'+nd:S.currentDir+'/'+nd;}
+  if(c.restrictedPaths&&c.restrictedPaths.some(p=>nd===p||nd.startsWith(p+'/'))&&!S.rootAccess){out('Permission denied.','t-error');addTrace(3);return;}
+  if(nd!=='~'&&!c.files[nd]){out(`cd: ${args[0]}: No such file or directory`,'t-error');return;}
+  S.currentDir=nd;setPrompt();addTrace(1);
+}
+
+function cmdCat(args){
+  if(!S.connected){out('Not connected.','t-error');return;}
+  if(!S.gainedAccess){out('No access.','t-error');return;}
+  if(!args[0]){out('Usage: cat <file>','t-error');return;}
+  const c=S.activeContract;const f=args[0];
+  if(f==='shadow'&&!S.rootAccess){out('cat: /etc/shadow: Permission denied.','t-error');addTrace(5);return;}
+  const content=c.fileContents[f];
+  if(!content){
+    if(f.endsWith('.pdf')||f.endsWith('.enc')||f.endsWith('.bin')||f.endsWith('.pt'))out(`cat: ${f}: Binary — use 'download'.`,'t-warning');
+    else out(`cat: ${f}: No such file or directory`,'t-error');
     return;
   }
-  const c = STATE.activeContract;
-  const objs = c.objectives;
-  const allDone = objs.every(o => STATE.objectives[o.id]);
-  const someDone = objs.some(o => STATE.objectives[o.id]);
+  addTrace(2);outBlank();content.forEach(l=>out(l));
+  if(f.includes('config'))outRaw(`<br><span class="t-success">[ Credentials found! ]</span>`);
+  if(f.includes('key')||f.includes('api_keys'))out('[ Sensitive credentials! ]','t-warning');
+  if(f==='jira.log'){outBlank();out('[ Log4Shell JNDI injection confirmed! ]','t-red');}
+}
 
-  if (!allDone && !someDone) {
-    printLine('ERROR: No objectives completed. Complete tasks first.', 't-error');
-    return;
-  }
+function cmdMysql(args,inp){
+  if(!S.connected){out('Not connected.','t-error');return;}
+  if(!S.gainedAccess){out('No access.','t-error');return;}
+  const c=S.activeContract;
+  if(!c.services.some(sv=>sv.service==='mysql')){out('ERROR: No MySQL on this target.','t-error');return;}
+  inp.disabled=true;out('[mysql] Enter password:');
+  setTimeout(()=>{inp.disabled=false;inp.focus();addTrace(8);
+    setTimeout(()=>{
+      S.mysqlAccess=true;outBlank();out('Welcome to the MySQL monitor.','t-success');outBlank();
+      out('mysql> SELECT * FROM users LIMIT 5;','t-highlight');
+      out('+----+----------+--------------------+----------+','t-dim');
+      out('| id | username | email              | password |','t-output');
+      out('+----+----------+--------------------+----------+','t-dim');
+      out('|  1 | admin    | admin@acme.com     | [hash]   |','t-output');
+      out('|  2 | jsmith   | jsmith@acme.com    | [hash]   |','t-output');
+      out('|  3 | ceo      | ceo@acme.com       | [hash]   |','t-output');
+      out('+----+----------+--------------------+----------+','t-dim');
+      outBlank();out('[ 3 user records exfiltrated ]','t-success');
+    },800);
+  },600);
+}
 
-  const doneCount = objs.filter(o => STATE.objectives[o.id]).length;
-  const pct = Math.round(doneCount / objs.length * 100);
-  const reward = Math.round(c.reward * pct / 100);
-  const rep = Math.round(c.repReward * pct / 100);
+function cmdDownload(args,inp){
+  if(!S.connected){out('Not connected.','t-error');return;}
+  if(!S.gainedAccess){out('No access.','t-error');return;}
+  if(!args[0]){out('Usage: download <file>','t-error');return;}
+  const file=args[0];const c=S.activeContract;
+  const allFiles=Object.values(c.files).flat();
+  if(!allFiles.includes(file)){out(`download: ${file}: No such file`,'t-error');return;}
+  const rootOnly=['Q4_Product_Roadmap.pdf','Project_Stargate.enc','model_weights.bin','phantom_files.enc','master_key.txt','master.key','zero_day_payload.sh','master_decryption.key'];
+  if(rootOnly.includes(file)&&!S.rootAccess){out(`Permission denied: ${file} requires root.`,'t-error');addTrace(3);return;}
+  inp.disabled=true;addTrace(12);
+  out(`Initiating exfiltration: ${file}`);
+  outProgress(`Downloading ${file}`,2500,()=>{
+    inp.disabled=false;inp.focus();
+    S.downloadedFiles.push(file);
+    outRaw(`<span class="t-success">✓ ${esc(file)} saved to /home/hacknet/loot/</span>`);
+    showToast(`Downloaded: ${file}`,'success');
+    if(c.id==='c1'&&file==='Q4_Product_Roadmap.pdf')completeObj('download');
+    if(c.id==='c2'){
+      if(['beach.jpg','sunset.jpg','hotel.jpg','margarita.jpg','Cancun_2024'].includes(file))completeObj('locate');
+      if(file.includes('deleted')||file.includes('wedding'))completeObj('recover');
+    }
+    if(c.id==='c3'&&file==='transfer_queue.sql')completeObj('transfer');
+    if(c.id==='c4'&&file==='Project_Stargate.enc')completeObj('locate');
+    if(c.id==='c5'&&file==='model_weights.bin')completeObj('download');
+    if(c.id==='c6'&&file==='phantom_files.enc')completeObj('download');
+  });
+}
 
-  showModal(
-    'SUBMIT CONTRACT',
+function cmdCover(inp){
+  if(!S.gainedAccess){out('ERROR: No shell. Exploit target first.','t-error');return;}
+  inp.disabled=true;out('[ INITIATING LOG WIPE — 7-pass Gutmann ]','t-warning');addTrace(-5);
+  const logs=['auth.log','access.log','syslog','bash_history','wtmp','lastlog','secure'];
+  let i=0;
+  const next=()=>{
+    if(i>=logs.length){
+      inp.disabled=false;inp.focus();S.logsCleared=true;addTrace(-20);
+      outBlank();out('[ All logs overwritten ]','t-success');out('[ Shell history cleared ]','t-success');
+      out('[ Timestamps randomized ]','t-success');showToast('Tracks covered','success');
+      completeObj('cover');completeObj('coverall');return;
+    }
+    setTimeout(()=>{out(`  Overwriting /var/log/${logs[i]}... ✓`,'t-dim');i++;next();},200);
+  };
+  setTimeout(next,500);
+}
+
+function cmdSubmit(){
+  if(!S.activeContract){out('ERROR: No active contract.','t-error');return;}
+  const c=S.activeContract;
+  const done=c.objectives.filter(o=>S.objectives[o.id]).length;
+  if(done===0){out('ERROR: Complete at least one objective first.','t-error');return;}
+  const pct=Math.round(done/c.objectives.length*100);
+  const base=Math.round(c.reward*pct/100);const rep=Math.round(c.repReward*pct/100);
+  const all=done===c.objectives.length;const final=all?Math.round(base*1.1):base;
+  showModal('SUBMIT CONTRACT',
     `<p>Contract: <span style="color:var(--green)">${c.title}</span></p>
-     <p>Objectives: <span style="color:var(--yellow)">${doneCount}/${objs.length} (${pct}%)</span></p>
-     <p>Reward: <span style="color:var(--yellow)">$${reward.toLocaleString()}</span></p>
-     <p>Reputation: <span style="color:var(--cyan)">+${rep}</span></p>
-     ${allDone ? '<p style="color:var(--green)">✓ PERFECT COMPLETION BONUS: +10% credits</p>' : ''}`,
-    [
-      {
-        label: 'SUBMIT',
-        action: () => {
-          const finalReward = allDone ? Math.round(reward * 1.1) : reward;
-          STATE.credits += finalReward;
-          STATE.reputation = Math.min(100, STATE.reputation + rep);
-          STATE.trace = Math.max(0, STATE.trace - 20);
-          STATE.activeContract = null;
-
-          printBlank();
-          printRaw(`<span class="t-success">╔══ CONTRACT COMPLETE ══╗</span>`);
-          printLine(`Reward deposited: +$${finalReward.toLocaleString()}`, 't-success');
-          printLine(`Reputation gained: +${rep}`, 't-success');
-          printLine(`New balance: $${STATE.credits.toLocaleString()}`, 't-output');
-
-          updateHeader();
-          renderContracts();
-          updateActiveContract();
-          closeModal();
-          saveState();
-          showToast(`+$${finalReward.toLocaleString()} deposited!`, 'success');
-
-          if (STATE.connected) cmdDisconnect();
-        }
-      },
-      { label: 'CANCEL', action: closeModal }
-    ]
+     <p>Objectives: <span style="color:var(--yellow)">${done}/${c.objectives.length} (${pct}%)</span></p>
+     <p>Payout: <span style="color:var(--yellow)">$${final.toLocaleString()}</span>${all?' <span style="color:var(--green)">(+10% bonus!)</span>':''}</p>
+     <p>Reputation: <span style="color:var(--cyan)">+${rep}</span></p>`,
+    [{label:'COLLECT PAYMENT',action:()=>{
+      S.credits+=final;S.reputation=Math.min(100,S.reputation+rep);S.trace=Math.max(0,S.trace-20);S.activeContract=null;
+      outBlank();outRaw(`<span class="t-success">╔══ CONTRACT COMPLETE ══╗</span>`);
+      out(`Payout: +$${final.toLocaleString()}`,'t-success');out(`Rep: +${rep}`,'t-success');
+      out(`Balance: $${S.credits.toLocaleString()}`);out(`Reputation: ${S.reputation}/100`);
+      updateHeader();renderContracts();updateActiveContract();closeModal();saveState();
+      showToast(`+$${final.toLocaleString()} deposited!`,'success');
+      if(S.connected)cmdDisconnect();
+    }},{label:'CANCEL',action:closeModal}]
   );
 }
 
-function cmdShop() {
-  printBlank();
-  printLine('╔══════════════════════════════════════════════════════════╗', 't-dim');
-  printLine('║                   DARKWEB MARKET                        ║', 't-highlight');
-  printLine(`║  Your balance: $${String(STATE.credits.toLocaleString()).padEnd(40)}║`, 't-output');
-  printLine('╠══════════════════════════════════════════════════════════╣', 't-dim');
-
-  TOOLS_SHOP.forEach(t => {
-    const owned = STATE.tools.includes(t.id);
-    const canAfford = STATE.credits >= t.cost;
-    const prefix = owned ? '[INSTALLED]' : '[AVAILABLE]';
-    const cls = owned ? 't-success' : canAfford ? 't-output' : 't-dim';
-    printRaw(`<span class="${cls}">  ${prefix.padEnd(13)} ${t.name.padEnd(12)} ${t.desc.padEnd(22)} ${t.cost === 0 ? 'FREE' : '$' + t.cost.toLocaleString()}</span>`);
+function cmdShop(){
+  outBlank();
+  out('╔══════════════════════════════════════════════════════════╗','t-dim');
+  out('║                   DARKWEB MARKET v2                     ║','t-highlight');
+  out(`║  Balance: $${String(S.credits.toLocaleString()).padEnd(44)}║`);
+  out('╠══════════════════════════════════════════════════════════╣','t-dim');
+  SHOP.forEach(t=>{
+    const owned=playerTools.includes(t.id);const can=S.credits>=t.cost;
+    const cls=owned?'t-success':can?'t-output':'t-dim';
+    const price=t.cost===0?'FREE':'$'+t.cost.toLocaleString();
+    outRaw(`<span class="${cls}">  ${(owned?'[INSTALLED]':'[AVAILABLE]').padEnd(13)} ${t.name.padEnd(14)} ${t.desc.padEnd(26)} ${price}</span>`);
   });
-
-  printLine('╚══════════════════════════════════════════════════════════╝', 't-dim');
-  printBlank();
-  printLine(`Usage: buy <toolname>`, 't-system');
+  out('╚══════════════════════════════════════════════════════════╝','t-dim');
+  outBlank();out("Usage: buy <toolname>",'t-system');
 }
 
-function cmdBuy(args) {
-  if (!args[0]) { printLine('Usage: buy <toolname>', 't-error'); return; }
-  const toolId = args[0].toLowerCase();
-  const tool = TOOLS_SHOP.find(t => t.id === toolId);
-
-  if (!tool) { printLine(`Unknown tool: ${args[0]}. Type 'shop' to see available tools.`, 't-error'); return; }
-  if (STATE.tools.includes(toolId)) { printLine(`${tool.name} is already installed.`, 't-warning'); return; }
-  if (STATE.credits < tool.cost) {
-    printLine(`Insufficient credits. Need $${tool.cost.toLocaleString()}, have $${STATE.credits.toLocaleString()}.`, 't-error');
-    return;
-  }
-
-  showModal(
-    `PURCHASE ${tool.name.toUpperCase()}`,
-    `<p>Tool: <span style="color:var(--green)">${tool.name}</span></p>
-     <p>Function: ${tool.desc}</p>
-     <p>Cost: <span style="color:var(--yellow)">$${tool.cost.toLocaleString()}</span></p>
-     <p>Balance after: <span style="color:var(--yellow)">$${(STATE.credits - tool.cost).toLocaleString()}</span></p>`,
-    [
-      {
-        label: 'CONFIRM PURCHASE',
-        action: () => {
-          STATE.credits -= tool.cost;
-          STATE.tools.push(toolId);
-          updateHeader();
-          renderTools();
-          closeModal();
-          saveState();
-          printLine(`✓ ${tool.name} installed successfully.`, 't-success');
-          showToast(`${tool.name} purchased!`, 'success');
-        }
-      },
-      { label: 'CANCEL', action: closeModal }
-    ]
+function cmdBuy(args){
+  if(!args[0]){out('Usage: buy <toolname>','t-error');return;}
+  const tid=args[0].toLowerCase();const tool=SHOP.find(t=>t.id===tid);
+  if(!tool){out(`Unknown tool: ${args[0]}`,'t-error');return;}
+  if(playerTools.includes(tid)){out(`${tool.name} already installed.`,'t-warning');return;}
+  if(S.credits<tool.cost){out(`Need $${tool.cost.toLocaleString()}, have $${S.credits.toLocaleString()}.`,'t-error');return;}
+  showModal(`PURCHASE ${tool.name.toUpperCase()}`,
+    `<p>Tool: <span style="color:var(--green)">${tool.name}</span></p><p>${tool.desc}</p><p>Cost: <span style="color:var(--yellow)">$${tool.cost.toLocaleString()}</span></p><p>After: <span style="color:var(--yellow)">$${(S.credits-tool.cost).toLocaleString()}</span></p>`,
+    [{label:'CONFIRM',action:()=>{S.credits-=tool.cost;playerTools.push(tid);updateHeader();renderTools();closeModal();saveState();out(`✓ ${tool.name} installed.`,'t-success');showToast(`${tool.name} installed!`,'success');}},
+     {label:'CANCEL',action:closeModal}]
   );
 }
 
-function cmdWhoami() {
-  if (STATE.rootAccess) { printLine('root', 't-red'); }
-  else if (STATE.gainedAccess) { printLine('www-data', 't-output'); }
-  else { printLine('anonymous', 't-dim'); }
+function cmdWhoami(){
+  if(S.rootAccess)out('root','t-red');
+  else if(S.gainedAccess)out('www-data','t-output');
+  else out('anonymous','t-dim');
 }
 
-function cmdStatus() {
-  const tier = getTier();
-  printBlank();
-  printLine(`╔═══ PLAYER STATUS ═══╗`, 't-highlight');
-  printLine(`  Credits:    $${STATE.credits.toLocaleString()}`, 't-output');
-  printLine(`  Reputation: ${STATE.reputation}/100`, 't-output');
-  printRaw(`  Tier:       <span style="color:${tier.color}">${tier.name}</span>`);
-  printLine(`  Trace:      ${STATE.trace}%`, 't-output');
-  printLine(`  Tools:      ${STATE.tools.join(', ')}`, 't-output');
-  printLine(`  Proxies:    ${STATE.proxychains} hops`, 't-output');
+function cmdStatus(){
+  const tier=getTier();outBlank();out('╔═══ PLAYER STATUS ═══╗','t-highlight');
+  out(`  Credits:    $${S.credits.toLocaleString()}`);out(`  Reputation: ${S.reputation}/100`);
+  outRaw(`  Rank:       <span style="color:${tier.color}">${tier.name}</span>`);
+  out(`  Trace:      ${S.trace}%`);out(`  Tools:      ${playerTools.join(', ')}`);
+  out(`  Proxies:    ${S.proxychains} active hops`);
 }
 
-function cmdIfconfig() {
-  printBlank();
-  printLine('eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>', 't-output');
-  printLine('  inet 10.0.0.42  netmask 255.255.255.0  broadcast 10.0.0.255', 't-output');
-  printLine('  ether de:ad:be:ef:00:42  txqueuelen 1000  (Ethernet)', 't-dim');
-  printLine('lo: flags=73<UP,LOOPBACK,RUNNING>', 't-output');
-  printLine('  inet 127.0.0.1  netmask 255.0.0.0', 't-output');
-  printLine('tun0: flags=4305<UP,POINTOPOINT,RUNNING>  (TOR)', 't-success');
-  printLine('  inet 10.8.0.1  p-t-p 10.8.0.2', 't-output');
+function cmdIfconfig(){
+  outBlank();out('eth0: flags=4163<UP,BROADCAST,RUNNING>  mtu 1500');out('  inet 10.0.0.42  netmask 255.255.255.0');
+  out('  ether de:ad:be:ef:00:42','t-dim');out('lo:   inet 127.0.0.1  netmask 255.0.0.0');
+  if(S.proxychains>0){out('tun0: flags=4305<UP,POINTOPOINT,RUNNING>  (TOR/PROXYCHAINS)','t-success');out('  inet 10.8.0.1  — real IP hidden','t-success');}
 }
 
-function cmdProxy(args, inp) {
-  if (!STATE.tools.includes('proxychains')) {
-    printLine('ERROR: proxychains not installed. Buy it in the shop.', 't-error');
-    return;
-  }
-  inp.disabled = true;
-  printLine('Routing through proxy chain...', 't-output');
-  const hops = ['95.179.210.33', '198.12.72.91', '185.56.90.14', '104.244.72.115'];
-  let i = 0;
-  const next = () => {
-    if (i >= 4) {
-      inp.disabled = false;
-      inp.focus();
-      STATE.proxychains = 4;
-      STATE.trace = Math.max(0, STATE.trace - 25);
-      printLine('Proxy chain established. Trace reduced by 25%.', 't-success');
-      printLine('Your real IP is now hidden.', 't-success');
-      updateTrace();
+function cmdProxy(args,inp){
+  if(!playerTools.includes('proxychains')){out("ERROR: proxychains not installed. 'buy proxychains'.",'t-error');return;}
+  inp.disabled=true;out('Building proxy chain...');
+  const hops=['95.179.210.33','198.12.72.91','185.56.90.14','104.244.72.115','45.33.32.156','173.230.149.77','89.234.157.254'];
+  let i=0;
+  const next=()=>{
+    if(i>=7){
+      inp.disabled=false;inp.focus();S.proxychains=7;addTrace(-30);
+      outBlank();out('7-hop proxy chain established.','t-success');out('Trace -30%. Real IP concealed.','t-success');updateTrace();
+      if(S.activeContract&&S.objectives.hasOwnProperty('exfil')&&S.rootAccess)
+        setTimeout(()=>completeObj('exfil'),400);
       return;
     }
-    setTimeout(() => {
-      printLine(`  → Hop ${i+1}: ${hops[i]} [OK]`, 't-dim');
-      i++;
-      next();
-    }, 300);
+    setTimeout(()=>{out(`  → Hop ${i+1}: ${hops[i]} [OK]`,'t-dim');i++;next();},300);
   };
-  setTimeout(next, 400);
+  setTimeout(next,400);
 }
 
-function cmdHydra(args, inp) {
-  if (!STATE.tools.includes('hydra')) {
-    printLine('ERROR: hydra not installed. Buy it in the shop.', 't-error');
-    return;
-  }
-  if (!STATE.connected) { printLine('Not connected to target.', 't-error'); return; }
-
-  inp.disabled = true;
-  addTrace(10);
-  printLine('[ BRUTE FORCE ATTACK ]', 't-warning');
-  printLine('Loading wordlist: rockyou.txt (14,341,234 entries)', 't-output');
-
-  printProgress('Attempting passwords', 4000, () => {
-    inp.disabled = false;
-    inp.focus();
-    printLine('Password found: admin123', 't-success');
-    printLine('Login: admin:admin123', 't-success');
-    STATE.gainedAccess = true;
-    if (STATE.objectives.hasOwnProperty('bypass')) completeObjective('bypass');
+function cmdHydra(args,inp){
+  if(!playerTools.includes('hydra')){out("ERROR: hydra not installed.",'t-error');return;}
+  if(!S.connected){out('Not connected.','t-error');return;}
+  inp.disabled=true;addTrace(10);out('[ HYDRA BRUTE FORCE ]','t-warning');out('Wordlist: rockyou.txt (14M entries)');
+  outProgress('Attempting passwords',4000,()=>{
+    inp.disabled=false;inp.focus();outBlank();
+    out('[22][ssh] login: admin   password: admin123','t-success');out('1 valid credential found.','t-success');
+    S.gainedAccess=true;setPrompt();
+    ['bypass','exploit'].forEach(id=>{if(S.objectives.hasOwnProperty(id))completeObj(id);});
   });
 }
 
-function cmdSqlmap(args, inp) {
-  if (!STATE.tools.includes('sqlmap')) {
-    printLine('ERROR: sqlmap not installed. Buy it in the shop.', 't-error');
-    return;
-  }
-  if (!STATE.connected) { printLine('Not connected to target.', 't-error'); return; }
-
-  inp.disabled = true;
-  addTrace(12);
-  printLine('[ SQL INJECTION ATTACK ]', 't-warning');
-  printLine("Testing: admin' OR '1'='1' --", 't-output');
-
-  printProgress('Injecting payloads', 3500, () => {
-    inp.disabled = false;
-    inp.focus();
-    printLine('SQL Injection successful!', 't-success');
-    printLine('Bypass: admin' + "' OR '1'='1' --", 't-success');
-    printLine('Access granted as admin (uid=0)', 't-success');
-    STATE.gainedAccess = true;
-    if (STATE.objectives.hasOwnProperty('exploit')) completeObjective('exploit');
+function cmdSqlmap(args,inp){
+  if(!playerTools.includes('sqlmap')){out("ERROR: sqlmap not installed.",'t-error');return;}
+  if(!S.connected){out('Not connected.','t-error');return;}
+  inp.disabled=true;addTrace(12);out('[ SQLMAP SQL INJECTION ]','t-warning');
+  out("Testing: username=' OR '1'='1'--");
+  outProgress('Injecting payloads (boolean, time-based, UNION)',3500,()=>{
+    inp.disabled=false;inp.focus();outBlank();
+    out("Parameter 'username' is VULNERABLE (boolean-based blind)",'t-success');
+    out("Payload: admin' OR '1'='1'--",'t-success');out('Auth bypass — session granted.','t-success');
+    S.gainedAccess=true;setPrompt();
+    ['exploit','bypass'].forEach(id=>{if(S.objectives.hasOwnProperty(id))completeObj(id);});
   });
 }
 
-function cmdUname() {
-  if (!STATE.connected) { printLine('Not connected.', 't-error'); return; }
-  const c = STATE.activeContract;
-  printLine(c.os, 't-output');
+function cmdUname(){if(!S.connected){out('Not connected.','t-error');return;}out(S.activeContract.os);}
+
+function cmdPs(){
+  if(!S.connected){out('Not connected.','t-error');return;}
+  out('  PID TTY   STAT COMMAND','t-highlight');
+  out('    1 ?     Ss   /sbin/init');out('   23 ?     Ss   sshd');
+  out('  452 ?     Ss   apache2 / flask');out(' 1337 pts/0 S+  bash  ← (you)','t-success');addTrace(2);
 }
 
-function cmdPs() {
-  if (!STATE.connected) { printLine('Not connected.', 't-error'); return; }
-  printLine('PID   TTY     STAT   TIME  COMMAND', 't-highlight');
-  printLine('1     ?       Ss     0:01  /sbin/init', 't-output');
-  printLine('23    ?       Ss     0:00  /usr/sbin/sshd', 't-output');
-  printLine('452   ?       Ss     0:00  /usr/sbin/apache2', 't-output');
-  printLine('1337  pts/0   S+     0:00  bash (you)', 't-success');
-  addTrace(2);
+function cmdHistoryList(){S.cmdHistory.slice(-20).forEach((c,i)=>out(`  ${String(i+1).padStart(3)}  ${c}`,'t-dim'));}
+
+function cmdPing(args,inp){
+  if(!args[0]){out('Usage: ping <ip>','t-error');return;}
+  inp.disabled=true;const ip=args[0];let n=0;
+  out(`PING ${ip} 56(84) bytes of data.`);
+  const t=setInterval(()=>{
+    out(`64 bytes from ${ip}: icmp_seq=${n+1} ttl=64 time=${Math.floor(Math.random()*50+10)} ms`);
+    n++;if(n>=4){clearInterval(t);outBlank();out(`4 packets: 0% loss`,'t-dim');inp.disabled=false;inp.focus();}
+  },400);
 }
 
-function cmdHistory() {
-  STATE.cmdHistory.slice(-20).forEach((cmd, i) => {
-    printLine(`  ${i+1}  ${cmd}`, 't-dim');
-  });
+function cmdTraceroute(args,inp){
+  if(!args[0]){out('Usage: traceroute <ip>','t-error');return;}
+  inp.disabled=true;const ip=args[0];const hops=['10.0.0.1','172.16.0.1','192.168.1.1',ip];let i=0;
+  out(`traceroute to ${ip}, 30 hops max`);
+  const next=()=>{
+    if(i>=hops.length){inp.disabled=false;inp.focus();return;}
+    setTimeout(()=>{const ms=Math.floor(Math.random()*30+5);out(`  ${i+1}  ${hops[i]}  ${ms} ms  ${ms+1} ms  ${ms+2} ms`);i++;next();},400);
+  };next();
 }
 
-function cmdPing(args, inp) {
-  if (!args[0]) { printLine('Usage: ping <ip>', 't-error'); return; }
-  inp.disabled = true;
-  const ip = args[0];
-  let count = 0;
-  printLine(`PING ${ip}`, 't-output');
-  const t = setInterval(() => {
-    const ms = Math.floor(Math.random() * 50 + 10);
-    printLine(`64 bytes from ${ip}: icmp_seq=${count+1} ttl=64 time=${ms} ms`, 't-output');
-    count++;
-    if (count >= 4) {
-      clearInterval(t);
-      inp.disabled = false;
-      inp.focus();
-      printBlank();
-    }
-  }, 400);
+// ── GAME MECHANICS ────────────────────────────────────────────
+function addTrace(n){
+  S.trace=Math.max(0,Math.min(100,S.trace+n));updateTrace();
+  if(S.trace>=100)triggerTraced();
+  else if(S.trace>=80)showToast('⚠ CRITICAL: Trace 80%+! Disconnect!','error');
+  else if(S.trace>=60)showToast('WARNING: Trace elevated','warning');
 }
 
-function cmdTraceroute(args, inp) {
-  if (!args[0]) { printLine('Usage: traceroute <ip>', 't-error'); return; }
-  inp.disabled = true;
-  const ip = args[0];
-  const hops = ['10.0.0.1', '172.16.0.1', '192.168.1.1', ip];
-  let i = 0;
-  printLine(`traceroute to ${ip}`, 't-output');
-  const next = () => {
-    if (i >= hops.length) { inp.disabled = false; inp.focus(); return; }
-    setTimeout(() => {
-      const ms = Math.floor(Math.random()*30+5);
-      printLine(`  ${i+1}  ${hops[i]}  ${ms} ms`, 't-output');
-      i++;
-      next();
-    }, 400);
-  };
-  next();
+function updateTrace(){
+  const fill=document.getElementById('trace-fill');const val=document.getElementById('trace-val');
+  const p=S.trace;fill.style.width=p+'%';
+  const col=p>=80?'var(--red)':p>=60?'var(--yellow)':p>=40?'#f5a623':'var(--green)';
+  fill.style.background=col;val.style.color=col;val.textContent=p+'%';
 }
 
-// ============================================================
-// GAME MECHANICS
-// ============================================================
-function addTrace(amount) {
-  STATE.trace = Math.max(0, Math.min(100, STATE.trace + amount));
-  updateTrace();
-
-  if (STATE.trace >= 100) {
-    triggerTraced();
-  } else if (STATE.trace >= 80) {
-    showToast('⚠ CRITICAL: Trace level 80%+! Disconnect NOW!', 'error');
-  } else if (STATE.trace >= 60) {
-    showToast('WARNING: Trace level elevated', 'warning');
-  }
-}
-
-function updateTrace() {
-  const fill = document.getElementById('trace-fill');
-  const val = document.getElementById('trace-val');
-  const pct = STATE.trace;
-
-  fill.style.width = pct + '%';
-
-  let color = 'var(--green)';
-  if (pct >= 80) color = 'var(--red)';
-  else if (pct >= 60) color = 'var(--yellow)';
-  else if (pct >= 40) color = '#f5a623';
-
-  fill.style.background = color;
-  fill.style.boxShadow = `0 0 10px ${color}`;
-  val.style.color = color;
-  val.textContent = pct + '%';
-}
-
-function triggerTraced() {
-  showModal(
-    '⚠ TRACED — CONNECTION BURNED',
-    `<p style="color:var(--red)">CRITICAL: Your connection has been fully traced!</p>
-     <p>IP address burned. Reputation damaged.</p>
-     <p>You must buy proxychains to continue safely.</p>`,
-    [{ label: 'DISCONNECT', action: () => {
-      STATE.trace = 0;
-      STATE.reputation = Math.max(0, STATE.reputation - 5);
-      if (STATE.connected) {
-        STATE.connected = false;
-        STATE.connectedTarget = null;
-        STATE.gainedAccess = false;
-        STATE.rootAccess = false;
-        setPromptLabel();
-      }
-      updateTrace();
-      updateHeader();
-      closeModal();
-      printRaw(`<span class="t-red">CONNECTION TERMINATED — TRACED</span>`);
-      printLine('Reputation -5. Install proxychains to reduce trace risk.', 't-error');
+function triggerTraced(){
+  showModal('⚠ FULLY TRACED',
+    `<p style="color:var(--red)">Connection fully traced! Forced disconnect.</p><p>Reputation -5. Use proxychains next time.</p>`,
+    [{label:'EMERGENCY DISCONNECT',danger:true,action:()=>{
+      S.trace=0;S.reputation=Math.max(0,S.reputation-5);
+      if(S.connected){S.connected=false;S.connectedTarget=null;S.gainedAccess=false;S.rootAccess=false;setPrompt();}
+      updateTrace();updateHeader();closeModal();
+      outRaw(`<span class="t-red">CONNECTION TERMINATED — TRACED</span>`);
     }}]
   );
 }
 
-function completeObjective(id) {
-  if (STATE.objectives.hasOwnProperty(id) && !STATE.objectives[id]) {
-    STATE.objectives[id] = true;
-    updateActiveContract();
-    showToast(`Objective complete: ${id}`, 'success');
-    printRaw(`<span class="t-success">✓ OBJECTIVE COMPLETE: ${id}</span>`);
+function completeObj(id){
+  if(S.objectives.hasOwnProperty(id)&&!S.objectives[id]){
+    S.objectives[id]=true;updateActiveContract();showToast(`✓ Objective: ${id}`,'success');
+    outRaw(`<span class="t-success">✓ OBJECTIVE COMPLETE: ${esc(id)}</span>`);
   }
 }
 
-function getTier() {
-  return REP_TIERS.find(t => STATE.reputation >= t.min && STATE.reputation <= t.max) || REP_TIERS[0];
+function getTier(){return TIERS.find(t=>S.reputation>=t.min&&S.reputation<=t.max)||TIERS[0];}
+
+// ── UI UPDATES ────────────────────────────────────────────────
+function updateHeader(){
+  const t=getTier();
+  document.getElementById('hdr-credits').textContent='$'+S.credits.toLocaleString();
+  document.getElementById('hdr-rep-text').innerHTML=`<span style="color:${t.color}">${t.name} (${S.reputation})</span>`;
 }
 
-// ============================================================
-// UI UPDATES
-// ============================================================
-function updateHeader() {
-  const tier = getTier();
-  document.getElementById('hdr-credits').textContent = '$' + STATE.credits.toLocaleString();
-  document.getElementById('hdr-rep-text').innerHTML =
-    `<span style="color:${tier.color}">${tier.name} (${STATE.reputation})</span>`;
-}
-
-function renderContracts() {
-  const el = document.getElementById('contract-list');
-  el.innerHTML = '';
-  CONTRACTS.forEach((c, i) => {
-    const locked = STATE.reputation < c.minRep;
-    const isActive = STATE.activeContract && STATE.activeContract.id === c.id;
-    const div = document.createElement('div');
-    div.className = `contract-item ${isActive ? 'active-contract' : ''} ${locked ? 'contract-locked' : ''}`;
-    div.innerHTML = `
-      <div class="contract-diff diff-${c.diff}">${c.diffLabel}</div>
+function renderContracts(){
+  const el=document.getElementById('contract-list');el.innerHTML='';
+  CONTRACTS.forEach((c,i)=>{
+    const locked=S.reputation<c.minRep;const isActive=S.activeContract&&S.activeContract.id===c.id;
+    const div=document.createElement('div');div.className=`contract-item${isActive?' active-contract':''}`;
+    div.style.opacity=locked?'0.4':'1';
+    const dc=c.diff==='easy'?'diff-easy':c.diff==='med'?'diff-med':c.diff==='hard'?'diff-hard':'diff-impossible';
+    div.innerHTML=`<div class="contract-diff ${dc}">${c.diffLabel}</div>
       <div class="contract-name">${c.title}</div>
-      <div class="contract-meta">
-        <span class="contract-reward">$${c.reward.toLocaleString()}</span>
-        <span class="contract-stars">${c.stars}</span>
-      </div>
-      ${isActive ? '<div style="color:var(--yellow);font-size:9px;margin-top:3px;">► ACTIVE</div>' : ''}
-      ${locked ? `<div style="font-size:9px;color:var(--gray);">LOCKED: ${c.minRep} REP</div>` : ''}
-    `;
-    if (!locked && !isActive) {
-      div.addEventListener('click', () => {
-        // Show contract detail
-        const inp = document.getElementById('terminal-input');
-        inp.value = `accept ${i + 1}`;
-        inp.focus();
-      });
-    }
+      <div class="contract-meta"><span class="contract-reward">$${c.reward.toLocaleString()}</span><span class="contract-stars">${c.stars}</span></div>
+      ${isActive?'<div style="color:var(--yellow);font-size:9px;margin-top:3px">► ACTIVE</div>':''}
+      ${locked?`<div style="font-size:9px;color:var(--gray)">🔒 REQ: ${c.minRep} REP</div>`:''}`;
+    if(!locked&&!isActive)div.addEventListener('click',()=>{const inp=document.getElementById('terminal-input');inp.value=`accept ${i+1}`;inp.focus();});
     el.appendChild(div);
   });
 }
 
-function updateActiveContract() {
-  const c = STATE.activeContract;
-  const infoEl = document.getElementById('active-contract-info');
-  const objSection = document.getElementById('objectives-section');
-  const objList = document.getElementById('objectives-list');
-
-  if (!c) {
-    infoEl.textContent = 'No active contract';
-    infoEl.style.color = 'var(--gray)';
-    objSection.style.display = 'none';
-    return;
-  }
-
-  infoEl.innerHTML = `
-    <div style="color:var(--green);font-size:11px;">${c.title}</div>
-    <div style="color:var(--yellow);font-size:10px;">$${c.reward.toLocaleString()}</div>
-    <div style="color:var(--gray);font-size:9px;">TARGET: ${c.targetIp}</div>
-  `;
-
-  objSection.style.display = 'block';
-  objList.innerHTML = '';
-  c.objectives.forEach(o => {
-    const done = STATE.objectives[o.id];
-    const div = document.createElement('div');
-    div.className = 'objective-item';
-    div.innerHTML = `
-      <span class="obj-check ${done ? 'done' : 'pending'}">${done ? '✓' : '○'}</span>
-      <span class="obj-text ${done ? 'done' : 'pending'}">${o.text}</span>
-    `;
-    objList.appendChild(div);
+function updateActiveContract(){
+  const c=S.activeContract;
+  const info=document.getElementById('active-contract-info');
+  const sec=document.getElementById('objectives-section');
+  const list=document.getElementById('objectives-list');
+  if(!c){info.textContent='No active contract';info.style.color='var(--gray)';sec.style.display='none';return;}
+  info.innerHTML=`<div style="color:var(--green);font-size:11px">${c.title}</div>
+    <div style="color:var(--yellow);font-size:10px">$${c.reward.toLocaleString()} + ${c.repReward} REP</div>
+    <div style="color:var(--gray);font-size:9px;margin-top:3px">TARGET: ${c.targetIp}</div>`;
+  sec.style.display='block';list.innerHTML='';
+  c.objectives.forEach(o=>{
+    const done=S.objectives[o.id];const div=document.createElement('div');div.className='objective-item';
+    div.innerHTML=`<span class="obj-check ${done?'done':'pending'}">${done?'✓':'○'}</span><span class="obj-text ${done?'done':'pending'}">${esc(o.text)}</span>`;
+    list.appendChild(div);
   });
 }
 
-function renderTools() {
-  const el = document.getElementById('tools-list');
-  el.innerHTML = '';
-  STATE.tools.forEach(tid => {
-    const tool = TOOLS_SHOP.find(t => t.id === tid);
-    if (!tool) return;
-    const div = document.createElement('div');
-    div.className = 'tool-item owned';
-    div.innerHTML = `<span class="tool-name">${tool.name}</span><span style="color:var(--gray);font-size:9px;">${tool.desc}</span>`;
+function renderTools(){
+  const el=document.getElementById('tools-list');el.innerHTML='';
+  playerTools.forEach(tid=>{
+    const t=SHOP.find(s=>s.id===tid);if(!t)return;
+    const div=document.createElement('div');div.className='tool-item';
+    div.innerHTML=`<span class="tool-name">${t.name}</span><span style="color:var(--gray);font-size:9px">${t.desc}</span>`;
     el.appendChild(div);
   });
 }
 
-function renderNetwork() {
-  const el = document.getElementById('network-list');
-  el.innerHTML = '';
-  const nodes = [
-    { name: 'darknet', ip: 'relay-7', active: true, connected: false },
-    ...(STATE.activeContract ? [{
-      name: STATE.activeContract.target,
-      ip: STATE.activeContract.targetIp,
-      active: STATE.connected,
-      connected: STATE.connected
-    }] : []),
-  ];
-
-  nodes.forEach(n => {
-    const div = document.createElement('div');
-    div.className = `network-node ${n.connected ? 'connected' : ''}`;
-    div.innerHTML = `
-      <div class="node-dot ${n.active ? 'active' : ''}"></div>
-      <div>
-        <div class="node-name">${n.name}</div>
-        <div class="node-ip">${n.ip}</div>
-      </div>
-    `;
+function renderNetwork(){
+  const el=document.getElementById('network-list');el.innerHTML='';
+  const nodes=[{name:'darknet-relay-7',ip:'tor exit node',active:true,connected:false}];
+  if(S.activeContract)nodes.push({name:S.activeContract.target,ip:S.activeContract.targetIp,active:S.connected,connected:S.connected});
+  nodes.forEach(n=>{
+    const div=document.createElement('div');div.className=`network-node${n.connected?' connected':''}`;
+    div.innerHTML=`<div class="node-dot${n.active?' active':''}"></div><div><div class="node-name">${esc(n.name)}</div><div class="node-ip">${esc(n.ip)}</div></div>`;
     el.appendChild(div);
   });
 }
 
-// ============================================================
-// MODAL
-// ============================================================
-function showModal(title, body, actions) {
-  document.getElementById('modal-title').textContent = title;
-  document.getElementById('modal-body').innerHTML = body;
-  const actEl = document.getElementById('modal-actions');
-  actEl.innerHTML = '';
-  actions.forEach(a => {
-    const btn = document.createElement('button');
-    btn.className = `modal-btn ${a.danger ? 'danger' : ''}`;
-    btn.textContent = a.label;
-    btn.onclick = a.action;
-    actEl.appendChild(btn);
-  });
+// ── MODAL / TOAST ─────────────────────────────────────────────
+function showModal(title,body,actions){
+  document.getElementById('modal-title').textContent=title;
+  document.getElementById('modal-body').innerHTML=body;
+  const el=document.getElementById('modal-actions');el.innerHTML='';
+  actions.forEach(a=>{const btn=document.createElement('button');btn.className='modal-btn'+(a.danger?' danger':'');btn.textContent=a.label;btn.onclick=a.action;el.appendChild(btn);});
   document.getElementById('modal-overlay').classList.add('open');
 }
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open');}
+document.getElementById('modal-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('modal-overlay'))closeModal();});
 
-function closeModal() {
-  document.getElementById('modal-overlay').classList.remove('open');
+let toastT;
+function showToast(msg,type='success'){
+  const el=document.getElementById('toast');el.textContent=msg;el.className=`show ${type}`;
+  clearTimeout(toastT);toastT=setTimeout(()=>el.className='',3000);
 }
 
-// ============================================================
-// TOAST
-// ============================================================
-let toastTimer;
-function showToast(msg, type = 'success') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = `show ${type}`;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.className = '', 3000);
+// ── SAVE / LOAD ───────────────────────────────────────────────
+function saveState(){try{localStorage.setItem('hn_s',JSON.stringify({credits:S.credits,rep:S.reputation,tools:playerTools}));}catch(e){}}
+function loadState(){try{const d=JSON.parse(localStorage.getItem('hn_s')||'{}');if(d.credits)S.credits=d.credits;if(d.rep)S.reputation=d.rep;if(d.tools)playerTools=d.tools;}catch(e){}}
+
+// ── BOOT ──────────────────────────────────────────────────────
+function boot(){
+  const lines=[
+    {c:'ascii-art',t:'██╗  ██╗ █████╗  ██████╗██╗  ██╗███╗   ██╗███████╗████████╗'},
+    {c:'ascii-art',t:'██║  ██║██╔══██╗██╔════╝██║ ██╔╝████╗  ██║██╔════╝╚══██╔══╝'},
+    {c:'ascii-art',t:'███████║███████║██║     █████╔╝ ██╔██╗ ██║█████╗     ██║   '},
+    {c:'ascii-art',t:'██╔══██║██╔══██║██║     ██╔═██╗ ██║╚██╗██║██╔══╝     ██║   '},
+    {c:'ascii-art',t:'██║  ██║██║  ██║╚██████╗██║  ██╗██║ ╚████║███████╗   ██║   '},
+    {c:'ascii-art',t:'╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝   ╚═╝ v2.4.1'},
+    {c:'t-system', t:''},
+    {c:'t-system', t:'[ Initializing encrypted darknet connection... ]'},
+    {c:'t-info',   t:'[ Connected to darknet relay 7 (Tor exit node) ]'},
+    {c:'t-success',t:'[ Authentication complete. Welcome, anonymous. ]'},
+    {c:'t-system', t:''},
+    {c:'t-output', t:"Type 'help' for commands. Type 'contracts' to view jobs."},
+    {c:'t-output', t:"Type 'shop' to buy tools. Type 'status' for player info."},
+    {c:'t-system', t:''},
+  ];
+  lines.forEach((l,i)=>setTimeout(()=>out(l.t,l.c),i*45));
 }
 
-// ============================================================
-// CLICK OUTSIDE MODAL
-// ============================================================
-document.getElementById('modal-overlay').addEventListener('click', (e) => {
-  if (e.target === document.getElementById('modal-overlay')) closeModal();
-});
-
-// ============================================================
-// START
-// ============================================================
+// ── INIT ──────────────────────────────────────────────────────
+function init(){
+  loadState();renderContracts();renderTools();renderNetwork();updateHeader();updateTrace();boot();
+  const inp=document.getElementById('terminal-input');
+  inp.addEventListener('keydown',handleInput);inp.focus();
+  document.addEventListener('click',()=>{if(!window.getSelection().toString())inp.focus();});
+  document.addEventListener('mousemove',e=>{
+    document.getElementById('cursor').style.cssText=`left:${e.clientX}px;top:${e.clientY}px`;
+    document.getElementById('cursor-dot').style.cssText=`left:${e.clientX}px;top:${e.clientY}px`;
+  });
+  setInterval(()=>{const n=new Date();document.getElementById('sb-time').textContent=n.toTimeString().slice(0,8)+' UTC';},1000);
+  setInterval(()=>{S.packets+=Math.floor(Math.random()*20)+5;document.getElementById('sb-packets').textContent=`PKT: ${S.packets.toLocaleString()}`;},1500);
+  setInterval(()=>{if(!S.connected&&S.trace>0){S.trace=Math.max(0,S.trace-1);updateTrace();}},3000);
+}
 init();
 </script>
 </body>
